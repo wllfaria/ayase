@@ -1,0 +1,11 @@
+[package]
+name = "aya-frontend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aya-core.workspace = true
+
+[[bin]]
+name = "aya"
+path = "./src/main.rs"
