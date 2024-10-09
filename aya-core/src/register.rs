@@ -99,6 +99,7 @@ impl TryFrom<u16> for Register {
 
     fn try_from(value: u16) -> Result<Self> {
         match value {
+            0 => Ok(Register::Ret),
             2 => Ok(Register::R1),
             3 => Ok(Register::R2),
             4 => Ok(Register::R3),
@@ -107,10 +108,6 @@ impl TryFrom<u16> for Register {
             7 => Ok(Register::R6),
             8 => Ok(Register::R7),
             9 => Ok(Register::R8),
-            0 => Err(Error::ForbiddenRegister(format!(
-                "access to register {} is forbidden",
-                Register::Ret
-            ))),
             1 => Err(Error::ForbiddenRegister(format!(
                 "access to register {} is forbidden",
                 Register::IP
@@ -146,10 +143,7 @@ impl<const WORD_SIZE: usize> Registers<WORD_SIZE> {
     }
 
     pub fn fetch_word(&self, register: Register) -> Word<WORD_SIZE> {
-        assert!(matches!(
-            register,
-            Register::Ret | Register::IP | Register::SP | Register::FP
-        ));
+        assert!(matches!(register, Register::IP | Register::SP | Register::FP));
         let word = self.inner[register as usize];
         assert!((word as usize) < WORD_SIZE);
         word.try_into().unwrap()
@@ -161,6 +155,13 @@ impl<const WORD_SIZE: usize> Registers<WORD_SIZE> {
 
     pub(crate) fn set(&mut self, register: Register, value: u16) {
         self.inner[register as usize] = value;
+    }
+
+    #[cfg(debug_assertions)]
+    pub fn inspect(&self) {
+        for register in Register::iter() {
+            println!("{: <3} @ 0x{:04X}", register, self.fetch(register));
+        }
     }
 }
 

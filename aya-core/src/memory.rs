@@ -44,6 +44,7 @@ pub trait Addressable<const SIZE: usize> {
         for _ in 0..size {
             print!("0x{:02X} ", self.read(curr)?);
             let Ok(next) = curr.next() else {
+                print!("<EOF>");
                 break;
             };
             curr = next;

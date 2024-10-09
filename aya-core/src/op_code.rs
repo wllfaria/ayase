@@ -8,6 +8,12 @@ pub enum OpCode {
     PushLit     = 0x02,
     PushReg     = 0x03,
     PushRegPtr  = 0x04,
+
+    PopReg      = 0x05,
+    Pop         = 0x06,
+
+    Call        = 0x10,
+    Ret         = 0x11,
 }
 
 #[derive(Debug)]
@@ -27,6 +33,10 @@ impl TryFrom<u16> for OpCode {
             v if v == OpCode::PushLit as u16 => Ok(OpCode::PushLit),
             v if v == OpCode::PushReg as u16 => Ok(OpCode::PushReg),
             v if v == OpCode::PushRegPtr as u16 => Ok(OpCode::PushRegPtr),
+            v if v == OpCode::PopReg as u16 => Ok(OpCode::PopReg),
+            v if v == OpCode::Pop as u16 => Ok(OpCode::Pop),
+            v if v == OpCode::Call as u16 => Ok(OpCode::Call),
+            v if v == OpCode::Ret as u16 => Ok(OpCode::Ret),
             v => Err(Error::InvalidValue(format!("value {v} is not a valid op code"))),
         }
     }

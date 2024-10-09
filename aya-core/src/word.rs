@@ -1,10 +1,10 @@
-use std::fmt;
+use std::{fmt, ops};
 
 use crate::memory::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Word<const SIZE: usize>(u16);
 
 impl<const SIZE: usize> fmt::Display for Word<SIZE> {
@@ -70,5 +70,21 @@ impl<const SIZE: usize> From<Word<SIZE>> for usize {
 impl<const SIZE: usize> From<Word<SIZE>> for u16 {
     fn from(word: Word<SIZE>) -> Self {
         word.0
+    }
+}
+
+impl<const SIZE: usize> ops::Sub for Word<SIZE> {
+    type Output = Word<SIZE>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Word(self.0 - rhs.0)
+    }
+}
+
+impl<const SIZE: usize> ops::Add for Word<SIZE> {
+    type Output = Word<SIZE>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Word(self.0 + rhs.0)
     }
 }
