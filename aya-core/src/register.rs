@@ -5,6 +5,7 @@ use crate::word::Word;
 #[derive(Debug)]
 pub enum Error {
     InvalidRegister(String),
+    ForbiddenRegister(String),
 }
 
 impl fmt::Display for Error {
@@ -98,8 +99,6 @@ impl TryFrom<u16> for Register {
 
     fn try_from(value: u16) -> Result<Self> {
         match value {
-            0 => Ok(Register::Ret),
-            1 => Ok(Register::IP),
             2 => Ok(Register::R1),
             3 => Ok(Register::R2),
             4 => Ok(Register::R3),
@@ -108,8 +107,22 @@ impl TryFrom<u16> for Register {
             7 => Ok(Register::R6),
             8 => Ok(Register::R7),
             9 => Ok(Register::R8),
-            11 => Ok(Register::SP),
-            12 => Ok(Register::FP),
+            0 => Err(Error::ForbiddenRegister(format!(
+                "access to register {} is forbidden",
+                Register::Ret
+            ))),
+            1 => Err(Error::ForbiddenRegister(format!(
+                "access to register {} is forbidden",
+                Register::IP
+            ))),
+            11 => Err(Error::ForbiddenRegister(format!(
+                "access to register {} is forbidden",
+                Register::SP
+            ))),
+            12 => Err(Error::ForbiddenRegister(format!(
+                "access to register {} is forbidden",
+                Register::FP
+            ))),
             v => Err(Error::InvalidRegister(format!(
                 "value 0x{v:04X} is not a valid register number"
             ))),
@@ -117,23 +130,42 @@ impl TryFrom<u16> for Register {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Registers<const WORD_SIZE: usize> {
     inner: [u16; Register::len()],
 }
 
 impl<const WORD_SIZE: usize> Registers<WORD_SIZE> {
-    pub fn new() -> Self {
-        Self {
+    pub(crate) fn new() -> Self {
+        let mut registers = Self {
             inner: [0; Register::len()],
-        }
+        };
+        registers.inner[Register::FP as usize] = (WORD_SIZE - 2) as u16;
+        registers.inner[Register::SP as usize] = (WORD_SIZE - 2) as u16;
+        registers
     }
 
-    pub fn fetch(&self, register: Register) -> Word<WORD_SIZE> {
-        (self.inner[register as usize]).into()
+    pub fn fetch_word(&self, register: Register) -> Word<WORD_SIZE> {
+        assert!(matches!(
+            register,
+            Register::Ret | Register::IP | Register::SP | Register::FP
+        ));
+        let word = self.inner[register as usize];
+        assert!((word as usize) < WORD_SIZE);
+        word.try_into().unwrap()
     }
 
-    pub fn set(&mut self, register: Register, value: Word<WORD_SIZE>) {
-        self.inner[register as usize] = value.into();
+    pub fn fetch(&self, register: Register) -> u16 {
+        self.inner[register as usize]
+    }
+
+    pub(crate) fn set(&mut self, register: Register, value: u16) {
+        self.inner[register as usize] = value;
+    }
+}
+
+impl<const WORD_SIZE: usize> Default for Registers<WORD_SIZE> {
+    fn default() -> Self {
+        Self::new()
     }
 }

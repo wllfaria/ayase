@@ -1,9 +1,12 @@
-use crate::word::Word;
 use std::fmt;
+
+use crate::word::Word;
 
 #[derive(Debug)]
 pub enum Error {
     InvalidAddress(String),
+    StackOverflow,
+    StackUnderflow,
 }
 
 impl fmt::Display for Error {
@@ -22,7 +25,7 @@ pub trait Addressable<const SIZE: usize> {
 
     fn read_word(&self, address: Word<SIZE>) -> Result<u16> {
         let first = self.read(address)? as u16;
-        let second = self.read(address.next())? as u16;
+        let second = self.read(address.next()?)? as u16;
         Ok(first | (second << 8))
     }
 
@@ -30,7 +33,7 @@ pub trait Addressable<const SIZE: usize> {
         let lower = (word & 0xff) as u8;
         let upper = ((word & 0xff00) >> 8) as u8;
         self.write(address, lower)?;
-        self.write(address.next(), upper)?;
+        self.write(address.next()?, upper)?;
         Ok(())
     }
 
@@ -40,7 +43,10 @@ pub trait Addressable<const SIZE: usize> {
         print!("0x{address:04X}: ");
         for _ in 0..size {
             print!("0x{:02X} ", self.read(curr)?);
-            curr = curr.next();
+            let Ok(next) = curr.next() else {
+                break;
+            };
+            curr = next;
         }
         println!();
         Ok(())
