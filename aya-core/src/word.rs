@@ -51,7 +51,7 @@ impl<const SIZE: usize> TryFrom<u16> for Word<SIZE> {
     type Error = Error;
 
     fn try_from(value: u16) -> Result<Self> {
-        if (value as usize) < SIZE {
+        if (value as usize) <= SIZE {
             Ok(Word(value))
         } else {
             Err(Error::InvalidAddress(format!(

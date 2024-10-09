@@ -137,8 +137,8 @@ impl<const WORD_SIZE: usize> Registers<WORD_SIZE> {
         let mut registers = Self {
             inner: [0; Register::len()],
         };
-        registers.inner[Register::FP as usize] = (WORD_SIZE - 2) as u16;
-        registers.inner[Register::SP as usize] = (WORD_SIZE - 2) as u16;
+        registers.inner[Register::FP as usize] = 0xffff - 2;
+        registers.inner[Register::SP as usize] = 0xffff - 2;
         registers
     }
 

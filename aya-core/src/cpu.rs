@@ -1,10 +1,16 @@
 use std::fmt;
 
-use crate::instruction::Instruction;
+use crate::instruction::{Instruction, InstructionSize};
 use crate::memory::{self, Addressable};
 use crate::op_code::{self, OpCode};
 use crate::register::{self, Register, Registers};
 use crate::word::Word;
+
+#[derive(Debug)]
+pub enum ExecutionFlow {
+    Halt(u16),
+    Continue,
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -55,93 +61,89 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
-    pub fn step(&mut self) -> Result<()> {
+    pub fn run(&mut self) {
+        loop {
+            match self.step() {
+                Ok(ExecutionFlow::Halt(_)) => break,
+                Ok(ExecutionFlow::Continue) => {}
+                Err(e) => todo!("{e:?}"),
+            }
+        }
+    }
+
+    pub fn step(&mut self) -> Result<ExecutionFlow> {
         let instruction = self.fetch()?;
-        #[cfg(debug_assertions)]
-        println!("{instruction:?}");
         self.execute(instruction)
     }
 
     fn fetch(&mut self) -> Result<Instruction<SIZE>> {
-        let op = self.next_instruction()?;
+        let op = self.next_instruction(InstructionSize::Small)?;
         let op = OpCode::try_from(op)?;
 
         match op {
             OpCode::MovLitReg => {
-                let reg = self.next_instruction()?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let val_ptr = self.registers.fetch_word(Register::IP);
-                let val = self.memory.read_word(val_ptr)?;
-                self.registers.set(Register::IP, val_ptr.next_word()?.into());
+                let val = self.next_instruction(InstructionSize::Word)?;
                 Ok(Instruction::MovLitReg(reg, val))
             }
             OpCode::MovRegReg => {
-                let reg_from = self.next_instruction()?;
+                let reg_from = self.next_instruction(InstructionSize::Small)?;
                 let reg_from = Register::try_from(reg_from)?;
-                let reg_ptr = self.registers.fetch_word(Register::IP);
-                let reg_to = self.memory.read_word(reg_ptr)?;
+                let reg_to = self.next_instruction(InstructionSize::Small)?;
                 let reg_to = Register::try_from(reg_to)?;
-                self.registers.set(Register::IP, reg_ptr.next_word()?.into());
                 Ok(Instruction::MovRegReg(reg_from, reg_to))
             }
             OpCode::PushLit => {
-                let val = self.next_instruction()?;
-                let stack_ptr = self.registers.fetch_word(Register::SP);
-                self.registers.set(Register::SP, stack_ptr.prev_word()?.into());
-                Ok(Instruction::PushLit(stack_ptr, val))
+                let val = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::PushLit(val))
             }
             OpCode::PushReg => {
-                let reg = self.next_instruction()?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
                 let val = self.registers.fetch(reg);
-                let stack_ptr = self.registers.fetch_word(Register::SP);
-                self.registers.set(Register::SP, stack_ptr.prev_word()?.into());
-                Ok(Instruction::PushLit(stack_ptr, val))
+                Ok(Instruction::PushLit(val))
             }
             OpCode::PushRegPtr => {
-                let reg = self.next_instruction()?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
                 // this register should hold a address, so we have to follow the pointer
                 let val = self.registers.fetch(reg);
                 let val = Word::try_from(val)?;
                 let val = self.memory.read_word(val)?;
-                let stack_ptr = self.registers.fetch_word(Register::SP);
-                self.registers.set(Register::SP, stack_ptr.prev_word()?.into());
-                Ok(Instruction::PushLit(stack_ptr, val))
+                Ok(Instruction::PushLit(val))
             }
-            OpCode::Pop => {
-                let val = self.pop_stack()?;
-                Ok(Instruction::Pop(None, val))
-            }
+            OpCode::Pop => Ok(Instruction::Pop),
             OpCode::PopReg => {
-                let reg = self.next_instruction()?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let val = self.pop_stack()?;
-                Ok(Instruction::Pop(Some(reg), val))
+                Ok(Instruction::PopReg(reg))
             }
             OpCode::Call => {
-                let word = self.next_instruction()?;
+                let word = self.next_instruction(InstructionSize::Word)?;
                 let word = Word::try_from(word)?;
                 Ok(Instruction::Call(word))
             }
             OpCode::Ret => Ok(Instruction::Ret),
+            OpCode::Halt => {
+                let code = self.next_instruction(InstructionSize::Small)?;
+                Ok(Instruction::Halt(code))
+            }
         }
     }
 
-    fn execute(&mut self, instruction: Instruction<SIZE>) -> Result<()> {
+    fn execute(&mut self, instruction: Instruction<SIZE>) -> Result<ExecutionFlow> {
         match instruction {
             Instruction::MovLitReg(reg, val) => self.registers.set(reg, val),
             Instruction::MovRegReg(from, to) => {
                 let val = self.registers.fetch(from);
                 self.registers.set(to, val);
             }
-            Instruction::PushLit(address, val) => {
-                self.memory.write_word(address, val)?;
-            }
-            Instruction::Pop(reg, val) => {
-                if let Some(reg) = reg {
-                    self.registers.set(reg, val);
-                }
+            Instruction::PushLit(val) => self.push_stack(val)?,
+            Instruction::Pop => _ = self.pop_stack()?,
+            Instruction::PopReg(reg) => {
+                let val = self.pop_stack()?;
+                self.registers.set(reg, val);
             }
             Instruction::Call(address) => {
                 // when calling a subroutine, we need to finish the current stack frame by:
@@ -197,15 +199,26 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let prev_frame_ptr = frame_ptr + Word::try_from(frame_size)?;
                 self.registers.set(Register::FP, prev_frame_ptr.into());
             }
+            Instruction::Halt(code) => return Ok(ExecutionFlow::Halt(code)),
         }
-        Ok(())
+        Ok(ExecutionFlow::Continue)
     }
 
-    fn next_instruction(&mut self) -> Result<u16> {
-        let reg_ptr = self.registers.fetch_word(Register::IP);
-        let val = self.memory.read_word(reg_ptr)?;
-        self.registers.set(Register::IP, reg_ptr.next_word()?.into());
-        Ok(val)
+    fn next_instruction(&mut self, size: InstructionSize) -> Result<u16> {
+        match size {
+            InstructionSize::Small => {
+                let reg_ptr = self.registers.fetch_word(Register::IP);
+                let val = self.memory.read(reg_ptr)?;
+                self.registers.set(Register::IP, reg_ptr.next()?.into());
+                Ok(val.into())
+            }
+            InstructionSize::Word => {
+                let reg_ptr = self.registers.fetch_word(Register::IP);
+                let val = self.memory.read_word(reg_ptr)?;
+                self.registers.set(Register::IP, reg_ptr.next_word()?.into());
+                Ok(val)
+            }
+        }
     }
 
     fn pop_stack(&mut self) -> Result<u16> {

@@ -14,6 +14,8 @@ pub enum OpCode {
 
     Call        = 0x10,
     Ret         = 0x11,
+
+    Halt        = 0xff,
 }
 
 #[derive(Debug)]
@@ -37,6 +39,7 @@ impl TryFrom<u16> for OpCode {
             v if v == OpCode::Pop as u16 => Ok(OpCode::Pop),
             v if v == OpCode::Call as u16 => Ok(OpCode::Call),
             v if v == OpCode::Ret as u16 => Ok(OpCode::Ret),
+            v if v == OpCode::Halt as u16 => Ok(OpCode::Halt),
             v => Err(Error::InvalidValue(format!("value {v} is not a valid op code"))),
         }
     }
