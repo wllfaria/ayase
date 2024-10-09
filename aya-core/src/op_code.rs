@@ -1,23 +1,3 @@
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
-#[rustfmt::skip]
-pub enum OpCode {
-    MovLitReg   = 0x00,
-    MovRegReg   = 0x01,
-
-    PushLit     = 0x02,
-    PushReg     = 0x03,
-    PushRegPtr  = 0x04,
-
-    PopReg      = 0x05,
-    Pop         = 0x06,
-
-    Call        = 0x10,
-    Ret         = 0x11,
-
-    Halt        = 0xff,
-}
-
 #[derive(Debug)]
 pub enum Error {
     InvalidValue(String),
@@ -25,22 +5,66 @@ pub enum Error {
 
 type Result = std::result::Result<OpCode, Error>;
 
-impl TryFrom<u16> for OpCode {
-    type Error = Error;
+macro_rules! op_codes {
+    ($($variant:ident = $value:expr),* $(,)?) => {
+        #[derive(Debug, Clone, Copy)]
+        #[repr(u8)]
+        #[rustfmt::skip]
+        pub enum OpCode {
+            $($variant = $value),*
+        }
 
-    fn try_from(value: u16) -> Result {
-        match value {
-            v if v == OpCode::MovLitReg as u16 => Ok(OpCode::MovLitReg),
-            v if v == OpCode::MovRegReg as u16 => Ok(OpCode::MovRegReg),
-            v if v == OpCode::PushLit as u16 => Ok(OpCode::PushLit),
-            v if v == OpCode::PushReg as u16 => Ok(OpCode::PushReg),
-            v if v == OpCode::PushRegPtr as u16 => Ok(OpCode::PushRegPtr),
-            v if v == OpCode::PopReg as u16 => Ok(OpCode::PopReg),
-            v if v == OpCode::Pop as u16 => Ok(OpCode::Pop),
-            v if v == OpCode::Call as u16 => Ok(OpCode::Call),
-            v if v == OpCode::Ret as u16 => Ok(OpCode::Ret),
-            v if v == OpCode::Halt as u16 => Ok(OpCode::Halt),
-            v => Err(Error::InvalidValue(format!("value {v} is not a valid op code"))),
+        impl TryFrom<u16> for OpCode {
+            type Error = Error;
+
+            fn try_from(value: u16) -> Result {
+                match value {
+                    $(x if x == $value => Ok(OpCode::$variant),)*
+                    v => Err(Error::InvalidValue(format!("value {v} is not a valid op code"))),
+                }
+            }
         }
     }
+}
+
+op_codes! {
+    MovLitReg       = 0x10,
+    MovRegReg       = 0x11,
+    MovRegMem       = 0x12,
+    MovMemReg       = 0x13,
+    MovLitMem       = 0x14,
+    MovRegPtrReg    = 0x15,
+
+    AddRegReg       = 0x20,
+    AddLitReg       = 0x21,
+    SubLitReg       = 0x22,
+    SubRegLit       = 0x23,
+    SubRegReg       = 0x24,
+    IncReg          = 0x25,
+    DecReg          = 0x26,
+    MulLitReg       = 0x27,
+    MulRegReg       = 0x28,
+
+    LShiftRegLit    = 0x30,
+    LShiftRegReg    = 0x31,
+    RShiftRegLit    = 0x32,
+    RShiftRegReg    = 0x33,
+    AndRegLit       = 0x34,
+    AndRegReg       = 0x35,
+    OrRegLit        = 0x36,
+    OrRegReg        = 0x37,
+    XorRegLit       = 0x38,
+    XorRegReg       = 0x39,
+    Not             = 0x3a,
+
+    PushLit         = 0x40,
+    PushReg         = 0x41,
+    PushRegPtr      = 0x42,
+    Pop             = 0x43,
+    PopReg          = 0x44,
+    Call            = 0x45,
+    CallReg         = 0x46,
+    Ret             = 0x47,
+
+    Halt            = 0xff,
 }

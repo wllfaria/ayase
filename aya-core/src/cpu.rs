@@ -13,39 +13,39 @@ pub enum ExecutionFlow {
 }
 
 #[derive(Debug)]
-pub enum Error {
-    Mem(memory::Error),
+pub enum Error<const MEM_SIZE: usize> {
+    Mem(memory::Error<MEM_SIZE>),
     OpCode(op_code::Error),
     Register(register::Error),
 }
 
-impl fmt::Display for Error {
+impl<const MEM_SIZE: usize> fmt::Display for Error<MEM_SIZE> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{self:?}")
     }
 }
 
-impl std::error::Error for Error {}
+impl<const MEM_SIZE: usize> std::error::Error for Error<MEM_SIZE> {}
 
-impl From<memory::Error> for Error {
-    fn from(err: memory::Error) -> Self {
+impl<const MEM_SIZE: usize> From<memory::Error<MEM_SIZE>> for Error<MEM_SIZE> {
+    fn from(err: memory::Error<MEM_SIZE>) -> Self {
         Self::Mem(err)
     }
 }
 
-impl From<op_code::Error> for Error {
+impl<const MEM_SIZE: usize> From<op_code::Error> for Error<MEM_SIZE> {
     fn from(err: op_code::Error) -> Self {
         Self::OpCode(err)
     }
 }
 
-impl From<register::Error> for Error {
+impl<const MEM_SIZE: usize> From<register::Error> for Error<MEM_SIZE> {
     fn from(err: register::Error) -> Self {
         Self::Register(err)
     }
 }
 
-type Result<T> = std::result::Result<T, Error>;
+type Result<const MEM_SIZE: usize, T> = std::result::Result<T, Error<MEM_SIZE>>;
 
 #[derive(Debug)]
 pub struct Cpu<const SIZE: usize, A: Addressable<SIZE>> {
@@ -71,12 +71,12 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
-    pub fn step(&mut self) -> Result<ExecutionFlow> {
+    pub fn step(&mut self) -> Result<SIZE, ExecutionFlow> {
         let instruction = self.fetch()?;
         self.execute(instruction)
     }
 
-    fn fetch(&mut self) -> Result<Instruction<SIZE>> {
+    fn fetch(&mut self) -> Result<SIZE, Instruction<SIZE>> {
         let op = self.next_instruction(InstructionSize::Small)?;
         let op = OpCode::try_from(op)?;
 
@@ -129,10 +129,35 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let code = self.next_instruction(InstructionSize::Small)?;
                 Ok(Instruction::Halt(code))
             }
+            OpCode::MovRegMem => todo!(),
+            OpCode::MovMemReg => todo!(),
+            OpCode::MovLitMem => todo!(),
+            OpCode::MovRegPtrReg => todo!(),
+            OpCode::AddRegReg => todo!(),
+            OpCode::AddLitReg => todo!(),
+            OpCode::SubLitReg => todo!(),
+            OpCode::SubRegLit => todo!(),
+            OpCode::SubRegReg => todo!(),
+            OpCode::IncReg => todo!(),
+            OpCode::DecReg => todo!(),
+            OpCode::MulLitReg => todo!(),
+            OpCode::MulRegReg => todo!(),
+            OpCode::LShiftRegLit => todo!(),
+            OpCode::LShiftRegReg => todo!(),
+            OpCode::RShiftRegLit => todo!(),
+            OpCode::RShiftRegReg => todo!(),
+            OpCode::AndRegLit => todo!(),
+            OpCode::AndRegReg => todo!(),
+            OpCode::OrRegLit => todo!(),
+            OpCode::OrRegReg => todo!(),
+            OpCode::XorRegLit => todo!(),
+            OpCode::XorRegReg => todo!(),
+            OpCode::Not => todo!(),
+            OpCode::CallReg => todo!(),
         }
     }
 
-    fn execute(&mut self, instruction: Instruction<SIZE>) -> Result<ExecutionFlow> {
+    fn execute(&mut self, instruction: Instruction<SIZE>) -> Result<SIZE, ExecutionFlow> {
         match instruction {
             Instruction::MovLitReg(reg, val) => self.registers.set(reg, val),
             Instruction::MovRegReg(from, to) => {
@@ -204,7 +229,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         Ok(ExecutionFlow::Continue)
     }
 
-    fn next_instruction(&mut self, size: InstructionSize) -> Result<u16> {
+    fn next_instruction(&mut self, size: InstructionSize) -> Result<SIZE, u16> {
         match size {
             InstructionSize::Small => {
                 let reg_ptr = self.registers.fetch_word(Register::IP);
@@ -221,7 +246,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
-    fn pop_stack(&mut self) -> Result<u16> {
+    fn pop_stack(&mut self) -> Result<SIZE, u16> {
         let stack_ptr = self.registers.fetch_word(Register::SP);
         let next = stack_ptr.next_word()?;
         let val = self.memory.read_word(next)?;
@@ -229,7 +254,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         Ok(val)
     }
 
-    fn push_stack(&mut self, val: u16) -> Result<()> {
+    fn push_stack(&mut self, val: u16) -> Result<SIZE, ()> {
         let stack_ptr = self.registers.fetch_word(Register::SP);
         self.memory.write_word(stack_ptr, val)?;
         self.registers.set(Register::SP, stack_ptr.prev_word()?.into());

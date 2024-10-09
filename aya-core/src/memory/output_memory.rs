@@ -32,11 +32,11 @@ fn write_char(ch: char) {
 }
 
 impl<const SIZE: usize> Addressable<SIZE> for OutputMemory<SIZE> {
-    fn write(&mut self, _: Word<SIZE>, _: u8) -> super::Result<()> {
+    fn write(&mut self, _: Word<SIZE>, _: u8) -> super::Result<SIZE, ()> {
         Ok(())
     }
 
-    fn write_word(&mut self, address: Word<SIZE>, word: u16) -> super::Result<()> {
+    fn write_word(&mut self, address: Word<SIZE>, word: u16) -> super::Result<SIZE, ()> {
         let ch = (word & 0x00ff) as u8;
         let command = ((word & 0xff00) >> 8) as u8;
 
@@ -53,7 +53,7 @@ impl<const SIZE: usize> Addressable<SIZE> for OutputMemory<SIZE> {
         Ok(())
     }
 
-    fn read(&mut self, _: Word<SIZE>) -> super::Result<u8> {
+    fn read(&mut self, _: Word<SIZE>) -> super::Result<SIZE, u8> {
         Ok(0)
     }
 }

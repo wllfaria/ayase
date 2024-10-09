@@ -2,7 +2,7 @@ use std::{fmt, ops};
 
 use crate::memory::Error;
 
-type Result<T> = std::result::Result<T, Error>;
+type Result<const MEM_SIZE: usize, T> = std::result::Result<T, Error<MEM_SIZE>>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Word<const SIZE: usize>(u16);
@@ -20,7 +20,7 @@ impl<const SIZE: usize> fmt::UpperHex for Word<SIZE> {
 }
 
 impl<const SIZE: usize> Word<SIZE> {
-    pub fn next(&self) -> Result<Word<SIZE>> {
+    pub fn next(&self) -> Result<SIZE, Word<SIZE>> {
         let Some(next) = self.0.checked_add(1) else { return Err(Error::StackOverflow) };
         if next as usize >= SIZE {
             return Err(Error::StackOverflow);
@@ -28,7 +28,7 @@ impl<const SIZE: usize> Word<SIZE> {
         Ok(Word(next))
     }
 
-    pub fn next_word(&self) -> Result<Word<SIZE>> {
+    pub fn next_word(&self) -> Result<SIZE, Word<SIZE>> {
         let Some(next) = self.0.checked_add(2) else { return Err(Error::StackOverflow) };
         if next as usize >= SIZE {
             return Err(Error::StackOverflow);
@@ -36,27 +36,25 @@ impl<const SIZE: usize> Word<SIZE> {
         Ok(Word(next))
     }
 
-    pub fn prev(&self) -> Result<Word<SIZE>> {
+    pub fn prev(&self) -> Result<SIZE, Word<SIZE>> {
         let Some(prev) = self.0.checked_sub(1) else { return Err(Error::StackUnderflow) };
         Ok(Word(prev))
     }
 
-    pub fn prev_word(&self) -> Result<Word<SIZE>> {
+    pub fn prev_word(&self) -> Result<SIZE, Word<SIZE>> {
         let Some(prev) = self.0.checked_sub(2) else { return Err(Error::StackUnderflow) };
         Ok(Word(prev))
     }
 }
 
 impl<const SIZE: usize> TryFrom<u16> for Word<SIZE> {
-    type Error = Error;
+    type Error = Error<SIZE>;
 
-    fn try_from(value: u16) -> Result<Self> {
+    fn try_from(value: u16) -> Result<SIZE, Self> {
         if (value as usize) <= SIZE {
             Ok(Word(value))
         } else {
-            Err(Error::InvalidAddress(format!(
-                "address 0x{value:04X?} is out of memory bounds"
-            )))
+            Err(Error::InvalidAddress(value))
         }
     }
 }
