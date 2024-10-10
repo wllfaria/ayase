@@ -118,53 +118,88 @@ pub fn parse_mov(input: &str) -> IResult<&str, Instruction> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{Atom, Operator};
 
-    fn run_instruction(input: &str) {
-        let (input, instruction) = parse_mov(input).unwrap();
-        insta::assert_debug_snapshot!(instruction);
-        assert!(input.is_empty());
+    fn run_instruction(input: &str) -> (&str, Instruction) {
+        parse_mov(input).unwrap()
     }
 
     #[test]
     fn test_mov_lit_reg() {
         let input = "mov r1, $c0d3";
-        run_instruction(input);
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
     }
 
     #[test]
     fn test_mov_reg_reg() {
         let input = "mov r1, r2";
-        run_instruction(input);
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
     }
 
     #[test]
     fn test_mov_reg_mem() {
         let input = "mov &c0d3, r2";
-        run_instruction(input);
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
     }
 
     #[test]
     fn test_mov_mem_reg() {
         let input = "mov r4, &c0d3";
-        run_instruction(input);
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
     }
 
     #[test]
     fn test_mov_lit_mem() {
         let input = "mov &c0d3, $ffe3";
-        run_instruction(input);
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
     }
 
     #[test]
     fn test_mov_reg_ptr_reg() {
         let input = "mov r3, &r4";
-        run_instruction(input);
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
     }
 
     #[test]
-    fn parse_complex_mov_reg_lit() {
+    fn test_complex_mov_reg_lit() {
         let input = "mov r1, [$42 + !loc - ($05 * ($31 + !var) - $07)]";
-        run_instruction(input);
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn test_complex_mov_reg_mem() {
+        let input = "mov &[$42 + !loc - ($05 * ($31 + !var) - $07)], r2";
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn test_complex_mov_mem_reg() {
+        let input = "mov r1, &[$42 + !loc - ($05 * ($31 + !var) - $07)]";
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
+    }
+
+    #[test]
+    fn test_complex_mov_lit_mem() {
+        let input = "mov &[$42 + !loc - ($05 * ($31 + !var) - $07)], $ffee";
+        let (input, instruction) = run_instruction(input);
+        insta::assert_debug_snapshot!(instruction);
+        assert!(input.is_empty());
     }
 }
