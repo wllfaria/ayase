@@ -73,7 +73,6 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
 
     pub fn step(&mut self) -> Result<SIZE, ExecutionFlow> {
         let instruction = self.fetch()?;
-        println!("{instruction:?}");
         self.execute(instruction)
     }
 
@@ -167,15 +166,15 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             OpCode::DecReg => todo!(),
             OpCode::MulLitReg => todo!(),
             OpCode::MulRegReg => todo!(),
-            OpCode::LShiftRegLit => todo!(),
-            OpCode::LsfRegReg => todo!(),
-            OpCode::RShiftRegLit => todo!(),
-            OpCode::RsfRegReg => todo!(),
-            OpCode::AndRegLit => todo!(),
+            OpCode::LshLitReg => todo!(),
+            OpCode::LshRegReg => todo!(),
+            OpCode::RshLitReg => todo!(),
+            OpCode::RshRegReg => todo!(),
+            OpCode::AndLitReg => todo!(),
             OpCode::AndRegReg => todo!(),
-            OpCode::OrRegLit => todo!(),
+            OpCode::OrLitReg => todo!(),
             OpCode::OrRegReg => todo!(),
-            OpCode::XorRegLit => todo!(),
+            OpCode::XorLitReg => todo!(),
             OpCode::XorRegReg => todo!(),
             OpCode::Not => todo!(),
             OpCode::CallRegPtr => todo!(),

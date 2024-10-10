@@ -35,8 +35,11 @@ with this tree view:
       r2   $0010
 ```
 
+r1
+&cccc
 
 ```asm
+
 ; Move Operations
 mov r1 $3000    ; mov literal into register (MovLitReg)
 mov r1 r2       ; mov register into register (MovRegReg)
@@ -44,6 +47,7 @@ mov &c0d3 r3    ; mov register into memory (MovRegMem)
 mov r1 &3000    ; mov memory into register (MovMemReg)
 mov &3000 $abcd ; mov literal into memory (MovLitMem)
 mov r1 &r2      ; mov register pointer into register (MovRegPtrReg)
+mov &r2 &r3
 
 ; Complex move operations
 mov &[r1 + $0010] r2     ; mov value on r2 into the address pointed by r2 + literal
@@ -60,10 +64,10 @@ mul r1 $0010    ; multiply register with literal (MulLitReg)
 mul r1 r2       ; multiply register with register (MulRegReg)
 
 ; bitwise operations
-lsf r1 $0010    ; left shift register with literal (LsfLitReg)
-lsf r1 r2       ; left shift register with register (LsfRegReg)
-rsf r1 $0010    ; right shift register with literal (RsfLitReg)
-rsf r1 r2       ; right shift register with register (RsfRegReg)
+lsh r1 $0010    ; left shift register with literal (LsfLitReg)
+lsh r1 r2       ; left shift register with register (LsfRegReg)
+rsh r1 $0010    ; right shift register with literal (RsfLitReg)
+rsh r1 r2       ; right shift register with register (RsfRegReg)
 and r1 $0010    ; and (&) literal into register (AndLitReg)
 and r1 r2       ; and (&) register into register (AndRegReg)
 or  r1 $0010    ; or  (|) literal into register (OrLitReg)

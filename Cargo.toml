@@ -1,7 +1,8 @@
 [workspace]
-members = ["aya-core", "aya-frontend"]
+members = ["aya-core", "aya-frontend", "aya-parser"]
 default-members = ["aya-frontend"]
 resolver = "2"
 
 [workspace.dependencies]
 aya-core = { path = "./aya-core" }
+aya-parser = { path = "./aya-parser" }
