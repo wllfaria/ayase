@@ -31,7 +31,9 @@ use add::parse_add;
 use and::parse_and;
 use cal::parse_cal;
 use dec::parse_dec;
+use hlt::parse_hlt;
 use inc::parse_inc;
+use jeq::parse_jeq;
 use jge::parse_jge;
 use jgt::parse_jgt;
 use jle::parse_jle;
@@ -44,6 +46,7 @@ use not::parse_not;
 use or::parse_or;
 use pop::parse_pop;
 use psh::parse_psh;
+use ret::parse_ret;
 use rsh::parse_rsh;
 use sub::parse_sub;
 use xor::parse_xor;
@@ -51,8 +54,14 @@ use xor::parse_xor;
 use crate::types::Instruction;
 
 pub fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
+    // alt is only implemented for tuples of size up to 21
     alt((
-        parse_add, parse_and, parse_cal, parse_dec, parse_inc, parse_jge, parse_jgt, parse_jle, parse_jlt, parse_jne,
-        parse_lsh, parse_mov, parse_mul, parse_not, parse_or, parse_pop, parse_psh, parse_rsh, parse_sub, parse_xor,
+        parse_jeq,
+        parse_hlt,
+        alt((
+            parse_add, parse_and, parse_cal, parse_dec, parse_inc, parse_jge, parse_jgt, parse_jle, parse_jlt,
+            parse_jne, parse_lsh, parse_mov, parse_mul, parse_not, parse_or, parse_pop, parse_psh, parse_rsh,
+            parse_sub, parse_xor, parse_ret,
+        )),
     ))(input)
 }
