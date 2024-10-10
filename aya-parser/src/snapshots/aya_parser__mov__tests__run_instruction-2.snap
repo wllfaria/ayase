@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/mov.rs
+expression: instruction
+---
+MovMemReg(
+    Register(
+        "r4",
+    ),
+    Address(
+        "c0d3",
+    ),
+)

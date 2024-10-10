@@ -88,3 +88,9 @@ ret             ; return from subroutine
 
 hlt             ; halts the virtual machine
 ```
+
+
+
+```asm
+mov r1, [$42 + !loc - ($05 * ($31 + !var) - $07)]
+```

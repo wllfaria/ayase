@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/mov.rs
+expression: instruction
+---
+MovRegReg(
+    Register(
+        "r1",
+    ),
+    Register(
+        "r2",
+    ),
+)
