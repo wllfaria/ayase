@@ -30,6 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     cpu.run();
 
+    println!();
     #[cfg(debug_assertions)]
     dump_memory(&mut cpu)?;
     Ok(())

@@ -73,6 +73,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
 
     pub fn step(&mut self) -> Result<SIZE, ExecutionFlow> {
         let instruction = self.fetch()?;
+        println!("{instruction:?}");
         self.execute(instruction)
     }
 
@@ -93,6 +94,34 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let reg_to = self.next_instruction(InstructionSize::Small)?;
                 let reg_to = Register::try_from(reg_to)?;
                 Ok(Instruction::MovRegReg(reg_from, reg_to))
+            }
+            OpCode::MovRegMem => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let address = self.next_instruction(InstructionSize::Word)?;
+                let reg = Register::try_from(reg)?;
+                let address = Word::try_from(address)?;
+                Ok(Instruction::MovRegMem(reg, address))
+            }
+            OpCode::MovLitMem => {
+                let val = self.next_instruction(InstructionSize::Word)?;
+                let address = self.next_instruction(InstructionSize::Word)?;
+                let address = Word::try_from(address)?;
+                Ok(Instruction::MovLitMem(val, address))
+            }
+            OpCode::MovMemReg => {
+                let address = self.next_instruction(InstructionSize::Word)?;
+                let address = Word::try_from(address)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                Ok(Instruction::MovMemReg(address, reg))
+            }
+            OpCode::MovRegPtrReg => {
+                let reg_from = self.next_instruction(InstructionSize::Small)?;
+                let reg_to = self.next_instruction(InstructionSize::Small)?;
+                let reg_from = Register::try_from(reg_from)?;
+                let reg_to = Register::try_from(reg_to)?;
+                // this register should hold a address, so we have to follow the pointer
+                Ok(Instruction::MovRegPtrReg(reg_from, reg_to))
             }
             OpCode::PushLit => {
                 let val = self.next_instruction(InstructionSize::Word)?;
@@ -129,10 +158,6 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let code = self.next_instruction(InstructionSize::Small)?;
                 Ok(Instruction::Halt(code))
             }
-            OpCode::MovRegMem => todo!(),
-            OpCode::MovMemReg => todo!(),
-            OpCode::MovLitMem => todo!(),
-            OpCode::MovRegPtrReg => todo!(),
             OpCode::AddRegReg => todo!(),
             OpCode::AddLitReg => todo!(),
             OpCode::SubLitReg => todo!(),
@@ -143,9 +168,9 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             OpCode::MulLitReg => todo!(),
             OpCode::MulRegReg => todo!(),
             OpCode::LShiftRegLit => todo!(),
-            OpCode::LShiftRegReg => todo!(),
+            OpCode::LsfRegReg => todo!(),
             OpCode::RShiftRegLit => todo!(),
-            OpCode::RShiftRegReg => todo!(),
+            OpCode::RsfRegReg => todo!(),
             OpCode::AndRegLit => todo!(),
             OpCode::AndRegReg => todo!(),
             OpCode::OrRegLit => todo!(),
@@ -153,7 +178,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             OpCode::XorRegLit => todo!(),
             OpCode::XorRegReg => todo!(),
             OpCode::Not => todo!(),
-            OpCode::CallReg => todo!(),
+            OpCode::CallRegPtr => todo!(),
         }
     }
 
@@ -164,6 +189,24 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let val = self.registers.fetch(from);
                 self.registers.set(to, val);
             }
+            Instruction::MovRegMem(reg, address) => {
+                let val = self.registers.fetch(reg);
+                self.memory.write_word(address, val)?;
+            }
+            Instruction::MovLitMem(val, address) => {
+                self.memory.write_word(address, val)?;
+            }
+            Instruction::MovMemReg(address, reg) => {
+                let value = self.memory.read_word(address)?;
+                self.registers.set(reg, value)
+            }
+            Instruction::MovRegPtrReg(from, to) => {
+                let val = self.registers.fetch(from);
+                let val = Word::try_from(val)?;
+                let val = self.memory.read_word(val)?;
+                self.registers.set(to, val);
+            }
+
             Instruction::PushLit(val) => self.push_stack(val)?,
             Instruction::Pop => _ = self.pop_stack()?,
             Instruction::PopReg(reg) => {
