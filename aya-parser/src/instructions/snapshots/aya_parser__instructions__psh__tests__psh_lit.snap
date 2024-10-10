@@ -1,0 +1,9 @@
+---
+source: aya-parser/src/instructions/psh.rs
+expression: instruction
+---
+PshLit(
+    HexLiteral(
+        "0303",
+    ),
+)

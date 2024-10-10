@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/jgt.rs
+expression: instruction
+---
+JgtReg(
+    Address(
+        "c0d3",
+    ),
+    Register(
+        "r2",
+    ),
+)

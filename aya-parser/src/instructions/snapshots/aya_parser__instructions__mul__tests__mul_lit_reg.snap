@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/mul.rs
+expression: instruction
+---
+MulLitReg(
+    Register(
+        "r1",
+    ),
+    HexLiteral(
+        "c0d3",
+    ),
+)

@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/mov.rs
+expression: instruction
+---
+MovLitReg(
+    Register(
+        "r1",
+    ),
+    HexLiteral(
+        "c0d3",
+    ),
+)

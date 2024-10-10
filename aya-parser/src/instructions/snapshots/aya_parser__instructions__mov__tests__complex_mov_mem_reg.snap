@@ -1,8 +1,11 @@
 ---
-source: aya-parser/src/mov.rs
+source: aya-parser/src/instructions/mov.rs
 expression: instruction
 ---
-MovRegMem(
+MovMemReg(
+    Register(
+        "r1",
+    ),
     BinaryOp {
         lhs: BinaryOp {
             lhs: HexLiteral(
@@ -36,7 +39,4 @@ MovRegMem(
             ),
         },
     },
-    Register(
-        "r2",
-    ),
 )

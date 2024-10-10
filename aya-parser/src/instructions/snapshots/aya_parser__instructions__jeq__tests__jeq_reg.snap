@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/jeq.rs
+expression: instruction
+---
+JeqReg(
+    Address(
+        "c0d3",
+    ),
+    Register(
+        "r2",
+    ),
+)

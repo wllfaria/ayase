@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/add.rs
+expression: instruction
+---
+AddLitReg(
+    Register(
+        "r1",
+    ),
+    HexLiteral(
+        "c0d3",
+    ),
+)

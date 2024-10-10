@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/mov.rs
+expression: instruction
+---
+MovLitMem(
+    Address(
+        "c0d3",
+    ),
+    HexLiteral(
+        "ffe3",
+    ),
+)

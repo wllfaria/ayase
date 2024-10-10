@@ -1,4 +1,7 @@
 mod common;
 mod expressions;
-mod mov;
+mod formats;
+mod instructions;
 mod types;
+
+pub use instructions::parse_instruction;

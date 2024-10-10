@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/lsh.rs
+expression: instruction
+---
+LshLitReg(
+    Register(
+        "r1",
+    ),
+    HexLiteral(
+        "c0d3",
+    ),
+)

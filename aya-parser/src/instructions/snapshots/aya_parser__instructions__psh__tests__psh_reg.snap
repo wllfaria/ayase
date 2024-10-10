@@ -1,0 +1,9 @@
+---
+source: aya-parser/src/instructions/psh.rs
+expression: instruction
+---
+PshReg(
+    Register(
+        "r2",
+    ),
+)

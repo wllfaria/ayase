@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/or.rs
+expression: instruction
+---
+OrLitReg(
+    Register(
+        "r1",
+    ),
+    HexLiteral(
+        "c0d3",
+    ),
+)

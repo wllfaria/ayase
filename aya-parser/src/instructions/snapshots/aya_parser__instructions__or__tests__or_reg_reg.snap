@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/or.rs
+expression: instruction
+---
+OrRegReg(
+    Register(
+        "r1",
+    ),
+    Register(
+        "r2",
+    ),
+)

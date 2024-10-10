@@ -37,9 +37,8 @@ op_codes! {
 
     AddRegReg       = 0x20,
     AddLitReg       = 0x21,
-    SubLitReg       = 0x22,
-    SubRegLit       = 0x23,
     SubRegReg       = 0x24,
+    SubLitReg       = 0x22,
     IncReg          = 0x25,
     DecReg          = 0x26,
     MulLitReg       = 0x27,
@@ -61,10 +60,9 @@ op_codes! {
     PushReg         = 0x41,
     PushRegPtr      = 0x42,
     Pop             = 0x43,
-    PopReg          = 0x44,
-    Call            = 0x45,
-    CallRegPtr      = 0x46,
-    Ret             = 0x47,
+    Call            = 0x44,
+    CallRegPtr      = 0x45,
+    Ret             = 0x46,
 
     Halt            = 0xff,
 }

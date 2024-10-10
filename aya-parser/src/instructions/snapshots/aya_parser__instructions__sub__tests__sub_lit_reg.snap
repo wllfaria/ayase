@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/sub.rs
+expression: instruction
+---
+SubLitReg(
+    Register(
+        "r1",
+    ),
+    HexLiteral(
+        "c0d3",
+    ),
+)

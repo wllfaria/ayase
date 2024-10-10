@@ -1,5 +1,5 @@
 ---
-source: aya-parser/src/mov.rs
+source: aya-parser/src/instructions/mov.rs
 expression: instruction
 ---
 MovRegPtrReg(

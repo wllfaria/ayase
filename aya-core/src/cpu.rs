@@ -141,8 +141,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let val = self.memory.read_word(val)?;
                 Ok(Instruction::PushLit(val))
             }
-            OpCode::Pop => Ok(Instruction::Pop),
-            OpCode::PopReg => {
+            OpCode::Pop => {
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
                 Ok(Instruction::PopReg(reg))
@@ -160,7 +159,6 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             OpCode::AddRegReg => todo!(),
             OpCode::AddLitReg => todo!(),
             OpCode::SubLitReg => todo!(),
-            OpCode::SubRegLit => todo!(),
             OpCode::SubRegReg => todo!(),
             OpCode::IncReg => todo!(),
             OpCode::DecReg => todo!(),
@@ -207,7 +205,6 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             }
 
             Instruction::PushLit(val) => self.push_stack(val)?,
-            Instruction::Pop => _ = self.pop_stack()?,
             Instruction::PopReg(reg) => {
                 let val = self.pop_stack()?;
                 self.registers.set(reg, val);

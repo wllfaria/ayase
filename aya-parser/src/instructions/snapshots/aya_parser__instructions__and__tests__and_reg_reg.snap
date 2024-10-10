@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/instructions/and.rs
+expression: instruction
+---
+AndRegReg(
+    Register(
+        "r1",
+    ),
+    Register(
+        "r2",
+    ),
+)

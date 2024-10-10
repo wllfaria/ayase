@@ -1,8 +1,8 @@
 ---
-source: aya-parser/src/mov.rs
+source: aya-parser/src/instructions/rsh.rs
 expression: instruction
 ---
-MovRegReg(
+RshRegReg(
     Register(
         "r1",
     ),

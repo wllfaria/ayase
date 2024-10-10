@@ -17,7 +17,6 @@ pub enum Instruction<const SIZE: usize> {
     MovRegPtrReg(Register, Register),
 
     PushLit(u16),
-    Pop,
     PopReg(Register),
     Call(Word<SIZE>),
     Ret,
@@ -35,7 +34,6 @@ impl<const SIZE: usize> std::fmt::Debug for Instruction<SIZE> {
             Instruction::MovLitMem(val, address) => write!(f, "mov   &{address:04X} ${val:04X}"),
 
             Instruction::PushLit(val) => write!(f, "push  ${val:04X}"),
-            Instruction::Pop => write!(f, "pop"),
             Instruction::PopReg(reg) => write!(f, "pop      {reg}"),
             Instruction::Call(address) => write!(f, "call  &{address:04X}"),
             Instruction::Ret => write!(f, "ret"),
