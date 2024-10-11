@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cpu.memory.write((idx as u16).try_into()?, byte)?;
     }
 
-    //cpu.run(dump_memory);
+    cpu.run(dump_memory);
     cpu.run(|_, _| {});
 
     Ok(())

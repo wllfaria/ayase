@@ -1,13 +1,12 @@
 [package]
-name = "aya-frontend"
+name = "aya-debugger"
 version = "0.1.0"
 edition = "2021"
-default-run = "aya"
 
 [dependencies]
 aya-core.workspace = true
-aya-compiler.workspace = true
+iced = "0.13.1"
 
 [[bin]]
-name = "aya"
+name = "ayadbg"
 path = "./src/main.rs"

@@ -1,6 +1,12 @@
 [workspace]
-members = ["aya-core", "aya-frontend", "aya-parser", "aya-compiler"]
-default-members = ["aya-frontend"]
+members = [
+    "aya-core",
+    "aya-frontend",
+    "aya-parser",
+    "aya-compiler",
+    "aya-debugger",
+]
+default-members = ["aya-frontend", "aya-debugger"]
 resolver = "2"
 
 [workspace.dependencies]
