@@ -24,6 +24,12 @@ macro_rules! op_codes {
                 }
             }
         }
+
+        impl From<OpCode> for u8 {
+            fn from(opcode: OpCode) -> Self  {
+                opcode as u8
+            }
+        }
     }
 }
 
@@ -58,11 +64,23 @@ op_codes! {
 
     PushLit         = 0x40,
     PushReg         = 0x41,
-    PushRegPtr      = 0x42,
-    Pop             = 0x43,
-    Call            = 0x44,
-    CallRegPtr      = 0x45,
-    Ret             = 0x46,
+    Pop             = 0x42,
+    Call            = 0x43,
+    CallRegPtr      = 0x44,
+    Ret             = 0x45,
+
+    JeqLit          = 0x51,
+    JeqReg          = 0x52,
+    JgtLit          = 0x53,
+    JgtReg          = 0x54,
+    JneLit          = 0x55,
+    JneReg          = 0x56,
+    JgeLit          = 0x57,
+    JgeReg          = 0x58,
+    JleLit          = 0x59,
+    JleReg          = 0x5a,
+    JltLit          = 0x5b,
+    JltReg          = 0x5c,
 
     Halt            = 0xff,
 }

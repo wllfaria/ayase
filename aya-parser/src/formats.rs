@@ -1,6 +1,6 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag_no_case;
-use nom::character::complete::{char, space0, space1};
+use nom::character::complete::{char, multispace0, space0, space1};
 use nom::sequence::preceded;
 use nom::IResult;
 
@@ -13,6 +13,7 @@ pub fn lit_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
@@ -23,7 +24,7 @@ pub fn lit_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     let (input, _) = space0(input)?;
 
     let (input, rhs) = alt((hex_literal, square_bracketed_expr))(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(lhs, rhs)))
 }
@@ -33,6 +34,7 @@ pub fn reg_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
@@ -43,7 +45,7 @@ pub fn reg_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     let (input, _) = space0(input)?;
 
     let (input, rhs) = register(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(lhs, rhs)))
 }
@@ -53,6 +55,7 @@ pub fn reg_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
@@ -63,7 +66,7 @@ pub fn reg_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     let (input, _) = space0(input)?;
 
     let (input, rhs) = register(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(lhs, rhs)))
 }
@@ -73,6 +76,7 @@ pub fn mem_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
@@ -83,7 +87,7 @@ pub fn mem_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     let (input, _) = space0(input)?;
 
     let (input, rhs) = alt((address, preceded(char('&'), square_bracketed_expr)))(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(lhs, rhs)))
 }
@@ -93,6 +97,7 @@ pub fn lit_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
@@ -103,7 +108,7 @@ pub fn lit_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     let (input, _) = space0(input)?;
 
     let (input, rhs) = alt((hex_literal, square_bracketed_expr))(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(lhs, rhs)))
 }
@@ -113,6 +118,7 @@ pub fn reg_ptr_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
@@ -123,7 +129,7 @@ pub fn reg_ptr_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'
     let (input, _) = space0(input)?;
 
     let (input, rhs) = preceded(char('&'), register)(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(lhs, rhs)))
 }
@@ -133,11 +139,12 @@ pub fn single_reg<'parser, M: Fn(Atom<'parser>) -> Instruction<'parser>>(
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
     let (input, reg) = register(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(reg)))
 }
@@ -147,11 +154,12 @@ pub fn single_lit<'parser, M: Fn(Atom<'parser>) -> Instruction<'parser>>(
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
     let (input, _) = space1(input)?;
 
     let (input, lit) = alt((hex_literal, square_bracketed_expr))(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper(lit)))
 }
@@ -161,8 +169,9 @@ pub fn no_arg<'parser, M: Fn() -> Instruction<'parser>>(
     prefix: &'parser str,
     mapper: M,
 ) -> IResult<&'parser str, Instruction<'parser>> {
+    let (input, _) = multispace0(input)?;
     let (input, _) = tag_no_case(prefix)(input)?;
-    let (input, _) = space0(input)?;
+    let (input, _) = multispace0(input)?;
 
     Ok((input, mapper()))
 }

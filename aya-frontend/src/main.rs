@@ -1,9 +1,8 @@
 use std::{env, fs};
 
-use aya_core::bytecode::Loader;
 use aya_core::cpu::Cpu;
+use aya_core::instruction::Instruction;
 use aya_core::memory::{Addressable, LinearMemory, MappingMode, MemoryMapper, OutputMemory};
-use aya_core::register::Register;
 use aya_core::MEMORY_SIZE;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -12,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args();
     let filename = args.nth(1).expect("provide a program file");
     let content = fs::read_to_string(filename).expect("unable to read file");
-    let program = Loader::load(content);
+    let program = aya_compiler::compile(&content);
 
     let mut memory_mapper = MemoryMapper::<MEMORY_SIZE>::default();
 
@@ -28,19 +27,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cpu.memory.write((idx as u16).try_into()?, byte)?;
     }
 
-    cpu.run();
+    //cpu.run(dump_memory);
+    cpu.run(|_, _| {});
 
-    println!();
-    #[cfg(debug_assertions)]
-    dump_memory(&mut cpu)?;
     Ok(())
 }
 
 #[cfg(debug_assertions)]
-fn dump_memory<const SIZE: usize, A: Addressable<SIZE>>(
-    cpu: &mut Cpu<SIZE, A>,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn dump_memory<const SIZE: usize, A: Addressable<SIZE>>(cpu: &mut Cpu<SIZE, A>, instruction: &Instruction<SIZE>) {
+    println!("{instruction:?}");
     cpu.registers.inspect();
-    cpu.memory.inspect_address(cpu.registers.fetch_word(Register::SP), 40)?;
-    Ok(())
+    cpu.memory.inspect_address(0x3000, 24).unwrap();
 }

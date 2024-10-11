@@ -29,9 +29,12 @@ pub trait Addressable<const SIZE: usize> {
     }
 
     #[cfg(debug_assertions)]
-    fn inspect_address(&mut self, address: Word<SIZE>, size: usize) -> Result<SIZE, ()> {
-        let mut curr = address;
-        print!("0x{address:04X}: ");
+    fn inspect_address<W: TryInto<Word<SIZE>>>(&mut self, address: W, size: usize) -> Result<SIZE, ()> {
+        let mut curr = match address.try_into() {
+            Ok(curr) => curr,
+            Err(_) => unreachable!(),
+        };
+        print!("0x{curr:04X}: ");
         for _ in 0..size {
             print!("0x{:02X} ", self.read(curr)?);
             let Ok(next) = curr.next() else {

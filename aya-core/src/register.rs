@@ -19,7 +19,7 @@ impl std::error::Error for Error {}
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Copy, Clone)]
-#[repr(u16)]
+#[repr(u8)]
 pub enum Register {
     Ret,
     IP,
@@ -82,6 +82,12 @@ impl Register {
     }
 }
 
+impl From<Register> for u8 {
+    fn from(register: Register) -> Self {
+        register as u8
+    }
+}
+
 impl From<Register> for usize {
     fn from(register: Register) -> Self {
         register as usize
@@ -122,6 +128,38 @@ impl TryFrom<u16> for Register {
             ))),
             v => Err(Error::InvalidRegister(format!(
                 "value 0x{v:04X} is not a valid register number"
+            ))),
+        }
+    }
+}
+
+impl TryFrom<u8> for Register {
+    type Error = Error;
+
+    fn try_from(value: u8) -> Result<Self> {
+        Register::try_from(value as u16)
+    }
+}
+
+impl TryFrom<&str> for Register {
+    type Error = Error;
+
+    fn try_from(value: &str) -> Result<Self> {
+        match value {
+            "ret" => Ok(Self::Ret),
+            "ip" => Ok(Self::IP),
+            "r1" => Ok(Self::R1),
+            "r2" => Ok(Self::R2),
+            "r3" => Ok(Self::R3),
+            "r4" => Ok(Self::R4),
+            "r5" => Ok(Self::R5),
+            "r6" => Ok(Self::R6),
+            "r7" => Ok(Self::R7),
+            "r8" => Ok(Self::R8),
+            "sp" => Ok(Self::SP),
+            "fp" => Ok(Self::FP),
+            _ => Err(Error::InvalidRegister(format!(
+                "value '{value}' is not a valid register name"
             ))),
         }
     }

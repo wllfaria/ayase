@@ -51,7 +51,7 @@ use rsh::parse_rsh;
 use sub::parse_sub;
 use xor::parse_xor;
 
-use crate::types::Instruction;
+pub use crate::types::{Atom, Instruction, InstructionKind};
 
 pub fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
     // alt is only implemented for tuples of size up to 21

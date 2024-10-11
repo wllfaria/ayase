@@ -1,8 +1,8 @@
 pub mod bytecode;
 pub mod cpu;
-mod instruction;
+pub mod instruction;
 pub mod memory;
-mod op_code;
+pub mod op_code;
 pub mod register;
 mod word;
 
