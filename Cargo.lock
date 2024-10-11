@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "aya-core",
  "aya-parser",
+ "insta",
 ]
 
 [[package]]

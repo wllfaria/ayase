@@ -14,6 +14,7 @@ pub enum Atom<'parser> {
     Register(&'parser str),
     Var(&'parser str),
     Operator(Operator),
+    Label(&'parser str),
     BinaryOp {
         lhs: Box<Atom<'parser>>,
         operator: Operator,
@@ -33,6 +34,7 @@ pub enum InstructionKind {
     NoArgs,
     SingleReg,
     SingleLit,
+    Nop,
 }
 
 impl InstructionKind {
@@ -48,12 +50,14 @@ impl InstructionKind {
             InstructionKind::NoArgs => 1,
             InstructionKind::SingleReg => 2,
             InstructionKind::SingleLit => 3,
+            InstructionKind::Nop => 0,
         }
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction<'parser> {
+    Nop(Atom<'parser>),
     MovLitReg(Atom<'parser>, Atom<'parser>),
     MovRegReg(Atom<'parser>, Atom<'parser>),
     MovRegMem(Atom<'parser>, Atom<'parser>),
@@ -136,18 +140,18 @@ impl<'parser> Instruction<'parser> {
             | Instruction::JleLit(lhs, _)
             | Instruction::JleReg(lhs, _)
             | Instruction::JltLit(lhs, _)
-            | Instruction::JltReg(lhs, _) => lhs,
+            | Instruction::JltReg(lhs, _)
+            | Instruction::PshLit(lhs)
+            | Instruction::PshReg(lhs)
+            | Instruction::Pop(lhs)
+            | Instruction::CalLit(lhs)
+            | Instruction::CalReg(lhs)
+            | Instruction::Inc(lhs)
+            | Instruction::Dec(lhs)
+            | Instruction::Nop(lhs)
+            | Instruction::Not(lhs) => lhs,
 
-            Instruction::PshLit(_)
-            | Instruction::PshReg(_)
-            | Instruction::Pop(_)
-            | Instruction::CalLit(_)
-            | Instruction::CalReg(_)
-            | Instruction::Inc(_)
-            | Instruction::Dec(_)
-            | Instruction::Not(_)
-            | Instruction::Ret
-            | Instruction::Hlt => unreachable!(),
+            Instruction::Ret | Instruction::Hlt => unreachable!(),
         }
     }
 
@@ -196,6 +200,7 @@ impl<'parser> Instruction<'parser> {
             | Instruction::Inc(_)
             | Instruction::Dec(_)
             | Instruction::Not(_)
+            | Instruction::Nop(_)
             | Instruction::Ret
             | Instruction::Hlt => unreachable!(),
         }
@@ -251,6 +256,8 @@ impl<'parser> Instruction<'parser> {
             Instruction::JleReg(_, _) => OpCode::JleReg,
             Instruction::JltLit(_, _) => OpCode::JltLit,
             Instruction::JltReg(_, _) => OpCode::JltReg,
+
+            Instruction::Nop(_) => unreachable!(),
         }
     }
 
@@ -303,6 +310,7 @@ impl<'parser> Instruction<'parser> {
             Instruction::MovRegPtrReg(_, _) => InstructionKind::RegPtrReg,
             Instruction::PshLit(_) | Instruction::CalLit(_) => InstructionKind::SingleLit,
             Instruction::Ret | Instruction::Hlt => InstructionKind::NoArgs,
+            Instruction::Nop(_) => InstructionKind::Nop,
         }
     }
 }

@@ -1,9 +1,9 @@
 use nom::branch::alt;
 use nom::bytes::complete::{tag, tag_no_case};
-use nom::character::complete::{alpha1, alphanumeric1, anychar, char, hex_digit1, one_of};
+use nom::character::complete::{alpha1, alphanumeric1, anychar, char, hex_digit1, multispace0, one_of};
 use nom::combinator::{map, peek as nom_peek, recognize};
 use nom::multi::many0_count;
-use nom::sequence::pair;
+use nom::sequence::{pair, terminated};
 use nom::IResult;
 
 use crate::types::{Atom, Operator};
@@ -56,6 +56,13 @@ pub fn identifier(input: &str) -> IResult<&str, &str> {
 pub fn variable(input: &str) -> IResult<&str, Atom> {
     let (input, _) = tag("!")(input)?;
     map(identifier, Atom::Var)(input)
+}
+
+pub fn label(input: &str) -> IResult<&str, Atom> {
+    let (input, _) = multispace0(input)?;
+    let (input, label) = map(terminated(identifier, char(':')), Atom::Label)(input)?;
+    let (input, _) = multispace0(input)?;
+    Ok((input, label))
 }
 
 pub fn hex_literal(input: &str) -> IResult<&str, Atom> {
