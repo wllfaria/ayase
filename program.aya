@@ -1,23 +1,20 @@
-mov &3000, $68
-mov &3001, $65
-mov &3002, $6c
-mov &3003, $6c
-mov &3004, $6f
-mov &3005, $20
-mov &3006, $77
-mov &3007, $6f
-mov &3008, $72
-mov &3009, $6c
-mov &300a, $64
-mov &300b, $21
-hlt
+@import "./another.aya" another $3000
 
-start:
+
+main:
     mov &0050, $0A
-    mov r2, &0050
-    psh r2
-    psh r2
-    psh r2
-    psh r2
-    psh r2
+loop:
+    mov ret, &0050
+    dec ret
+    mov &0050, ret
+    inc r2
+    inc r2
+    inc r2
+    cal &[!some_function]
+end:
     hlt
+
+// another.aya
++some_function:
+    mov ....
+    ...

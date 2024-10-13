@@ -162,6 +162,11 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let reg = Register::try_from(reg)?;
                 Ok(Instruction::PopReg(reg))
             }
+            OpCode::CallRegPtr => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                Ok(Instruction::CallRegPtr(reg))
+            }
             OpCode::Call => {
                 let word = self.next_instruction(InstructionSize::Word)?;
                 let word = Word::try_from(word)?;
@@ -179,13 +184,49 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let r2 = Register::try_from(r2)?;
                 Ok(Instruction::AddRegReg(r1, r2))
             }
-            OpCode::AddLitReg => todo!(),
-            OpCode::SubLitReg => todo!(),
-            OpCode::SubRegReg => todo!(),
-            OpCode::IncReg => todo!(),
-            OpCode::DecReg => todo!(),
-            OpCode::MulLitReg => todo!(),
-            OpCode::MulRegReg => todo!(),
+            OpCode::AddLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::AddLitReg(reg, lit))
+            }
+            OpCode::SubLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::SubLitReg(reg, lit))
+            }
+            OpCode::SubRegReg => {
+                let r1 = self.next_instruction(InstructionSize::Small)?;
+                let r1 = Register::try_from(r1)?;
+                let r2 = self.next_instruction(InstructionSize::Small)?;
+                let r2 = Register::try_from(r2)?;
+                Ok(Instruction::SubRegReg(r1, r2))
+            }
+            OpCode::IncReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                Ok(Instruction::IncReg(reg))
+            }
+            OpCode::DecReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                Ok(Instruction::DecReg(reg))
+            }
+            OpCode::MulLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::MulLitReg(reg, lit))
+            }
+            OpCode::MulRegReg => {
+                let r1 = self.next_instruction(InstructionSize::Small)?;
+                let r1 = Register::try_from(r1)?;
+                let r2 = self.next_instruction(InstructionSize::Small)?;
+                let r2 = Register::try_from(r2)?;
+                Ok(Instruction::MulRegReg(r1, r2))
+            }
+
             OpCode::LshLitReg => todo!(),
             OpCode::LshRegReg => todo!(),
             OpCode::RshLitReg => todo!(),
@@ -197,19 +238,85 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             OpCode::XorLitReg => todo!(),
             OpCode::XorRegReg => todo!(),
             OpCode::Not => todo!(),
-            OpCode::CallRegPtr => todo!(),
-            OpCode::JeqLit => todo!(),
-            OpCode::JeqReg => todo!(),
-            OpCode::JgtLit => todo!(),
-            OpCode::JgtReg => todo!(),
-            OpCode::JneLit => todo!(),
-            OpCode::JneReg => todo!(),
-            OpCode::JgeLit => todo!(),
-            OpCode::JgeReg => todo!(),
-            OpCode::JleLit => todo!(),
-            OpCode::JleReg => todo!(),
-            OpCode::JltLit => todo!(),
-            OpCode::JltReg => todo!(),
+
+            OpCode::JeqLit => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let literal = self.next_instruction(InstructionSize::Word)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JeqLit(jump_to, literal))
+            }
+            OpCode::JeqReg => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JeqReg(jump_to, reg))
+            }
+            OpCode::JgtLit => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let literal = self.next_instruction(InstructionSize::Word)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JgtLit(jump_to, literal))
+            }
+            OpCode::JgtReg => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JgtReg(jump_to, reg))
+            }
+            OpCode::JneLit => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let literal = self.next_instruction(InstructionSize::Word)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JneLit(jump_to, literal))
+            }
+            OpCode::JneReg => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JneReg(jump_to, reg))
+            }
+            OpCode::JgeLit => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let literal = self.next_instruction(InstructionSize::Word)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JgeLit(jump_to, literal))
+            }
+            OpCode::JgeReg => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JgeReg(jump_to, reg))
+            }
+            OpCode::JleLit => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let literal = self.next_instruction(InstructionSize::Word)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JleLit(jump_to, literal))
+            }
+            OpCode::JleReg => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JleReg(jump_to, reg))
+            }
+            OpCode::JltLit => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let literal = self.next_instruction(InstructionSize::Word)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JltLit(jump_to, literal))
+            }
+            OpCode::JltReg => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::JltReg(jump_to, reg))
+            }
         }
     }
 
@@ -243,37 +350,126 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let r2_value = self.registers.fetch(r2);
                 self.registers.set(r1, r1_value.wrapping_add(r2_value));
             }
+            Instruction::AddLitReg(reg, lit) => {
+                let reg_value = self.registers.fetch(reg);
+                self.registers.set(reg, reg_value.wrapping_add(lit));
+            }
+            Instruction::SubRegReg(r1, r2) => {
+                let r1_value = self.registers.fetch(r1);
+                let r2_value = self.registers.fetch(r2);
+                self.registers.set(r1, r1_value.wrapping_sub(r2_value));
+            }
+            Instruction::SubLitReg(reg, lit) => {
+                let reg_value = self.registers.fetch(reg);
+                self.registers.set(reg, reg_value.wrapping_sub(lit));
+            }
+            Instruction::MulRegReg(r1, r2) => {
+                let r1_value = self.registers.fetch(r1);
+                let r2_value = self.registers.fetch(r2);
+                self.registers.set(r1, r1_value.wrapping_mul(r2_value));
+            }
+            Instruction::MulLitReg(reg, lit) => {
+                let reg_value = self.registers.fetch(reg);
+                self.registers.set(reg, reg_value.wrapping_mul(lit));
+            }
+            Instruction::IncReg(reg) => {
+                let reg_val = self.registers.fetch(reg);
+                self.registers.set(reg, reg_val.wrapping_add(1));
+            }
+            Instruction::DecReg(reg) => {
+                let reg_val = self.registers.fetch(reg);
+                self.registers.set(reg, reg_val.wrapping_sub(1));
+            }
+
+            Instruction::JeqLit(address, lit) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                if lit == ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JeqReg(address, reg) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                let reg_val = self.registers.fetch(reg);
+                if reg_val == ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JgtLit(address, lit) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                if lit > ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JgtReg(address, reg) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                let reg_val = self.registers.fetch(reg);
+                if reg_val > ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JneLit(address, lit) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                if lit != ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JneReg(address, reg) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                let reg_val = self.registers.fetch(reg);
+                if reg_val != ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JgeLit(address, lit) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                if lit >= ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JgeReg(address, reg) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                let reg_val = self.registers.fetch(reg);
+                if reg_val >= ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JleLit(address, lit) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                if lit <= ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JleReg(address, reg) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                let reg_val = self.registers.fetch(reg);
+                if reg_val <= ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JltLit(address, lit) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                if lit < ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+            Instruction::JltReg(address, reg) => {
+                let ret_val = self.registers.fetch(Register::Ret);
+                let reg_val = self.registers.fetch(reg);
+                if reg_val < ret_val {
+                    self.registers.set(Register::IP, address.into());
+                }
+            }
+
             Instruction::PushLit(val) => self.push_stack(val)?,
             Instruction::PopReg(reg) => {
                 let val = self.pop_stack()?;
                 self.registers.set(reg, val);
             }
-            Instruction::Call(address) => {
-                // when calling a subroutine, we need to finish the current stack frame by:
-                // 1. pushing the state of every non volatile general purpose register (R1 to R4)
-                // 2. pushing the current address of the instruction pointer
-                // 3. pushing the size of the current stack frame.
-                // 4. moving the stack and frame pointer to the next address
-                let r1 = self.registers.fetch(Register::R1);
-                let r2 = self.registers.fetch(Register::R2);
-                let r3 = self.registers.fetch(Register::R3);
-                let r4 = self.registers.fetch(Register::R4);
-                let ip = self.registers.fetch(Register::IP);
-
-                self.push_stack(r1)?;
-                self.push_stack(r2)?;
-                self.push_stack(r3)?;
-                self.push_stack(r4)?;
-                self.push_stack(ip)?;
-
-                let stack_ptr = self.registers.fetch_word(Register::SP);
-                let frame_ptr = self.registers.fetch_word(Register::FP);
-                let next_frame_start = stack_ptr.prev_word()?;
-                let frame_size = frame_ptr - next_frame_start;
-                self.memory.write_word(stack_ptr, frame_size.into())?;
-                self.registers.set(Register::SP, next_frame_start.into());
-                self.registers.set(Register::FP, next_frame_start.into());
-                self.registers.set(Register::IP, address.into());
+            Instruction::Call(address) => self.call_address(address)?,
+            Instruction::CallRegPtr(reg) => {
+                let address = self.registers.fetch(reg);
+                let address = Word::try_from(address)?;
+                self.call_address(address)?;
             }
             Instruction::Ret => {
                 // when returning from a subroutine, we need to restore registers to same state as
@@ -322,6 +518,35 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 Ok(val)
             }
         }
+    }
+
+    fn call_address(&mut self, address: Word<SIZE>) -> Result<SIZE, ()> {
+        // when calling a subroutine, we need to finish the current stack frame by:
+        // 1. pushing the state of every non volatile general purpose register (R1 to R4)
+        // 2. pushing the current address of the instruction pointer
+        // 3. pushing the size of the current stack frame.
+        // 4. moving the stack and frame pointer to the next address
+        let r1 = self.registers.fetch(Register::R1);
+        let r2 = self.registers.fetch(Register::R2);
+        let r3 = self.registers.fetch(Register::R3);
+        let r4 = self.registers.fetch(Register::R4);
+        let ip = self.registers.fetch(Register::IP);
+
+        self.push_stack(r1)?;
+        self.push_stack(r2)?;
+        self.push_stack(r3)?;
+        self.push_stack(r4)?;
+        self.push_stack(ip)?;
+
+        let stack_ptr = self.registers.fetch_word(Register::SP);
+        let frame_ptr = self.registers.fetch_word(Register::FP);
+        let next_frame_start = stack_ptr.prev_word()?;
+        let frame_size = frame_ptr - next_frame_start;
+        self.memory.write_word(stack_ptr, frame_size.into())?;
+        self.registers.set(Register::SP, next_frame_start.into());
+        self.registers.set(Register::FP, next_frame_start.into());
+        self.registers.set(Register::IP, address.into());
+        Ok(())
     }
 
     fn pop_stack(&mut self) -> Result<SIZE, u16> {
