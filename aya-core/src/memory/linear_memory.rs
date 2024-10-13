@@ -24,7 +24,7 @@ impl<const SIZE: usize> Default for LinearMemory<SIZE> {
 }
 
 impl<const SIZE: usize> Addressable<SIZE> for LinearMemory<SIZE> {
-    fn read(&mut self, address: Word<SIZE>) -> Result<SIZE, u8> {
+    fn read(&self, address: Word<SIZE>) -> Result<SIZE, u8> {
         match self.inner.get::<usize>(address.into()) {
             Some(byte) => Ok(*byte),
             None => Err(Error::InvalidAddress(address.into())),

@@ -11,3 +11,13 @@ mov &3009, $6c
 mov &300a, $64
 mov &300b, $21
 hlt
+
+start:
+    mov &0050, $0A
+    mov r2, &0050
+    psh r2
+    psh r2
+    psh r2
+    psh r2
+    psh r2
+    hlt

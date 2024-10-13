@@ -11,10 +11,10 @@ pub use output_memory::OutputMemory;
 use crate::word::Word;
 
 pub trait Addressable<const SIZE: usize> {
-    fn read(&mut self, address: Word<SIZE>) -> Result<SIZE, u8>;
+    fn read(&self, address: Word<SIZE>) -> Result<SIZE, u8>;
     fn write(&mut self, address: Word<SIZE>, byte: u8) -> Result<SIZE, ()>;
 
-    fn read_word(&mut self, address: Word<SIZE>) -> Result<SIZE, u16> {
+    fn read_word(&self, address: Word<SIZE>) -> Result<SIZE, u16> {
         let first = self.read(address)? as u16;
         let second = self.read(address.next()?)? as u16;
         Ok(first | (second << 8))
@@ -28,22 +28,22 @@ pub trait Addressable<const SIZE: usize> {
         Ok(())
     }
 
-    #[cfg(debug_assertions)]
-    fn inspect_address<W: TryInto<Word<SIZE>>>(&mut self, address: W, size: usize) -> Result<SIZE, ()> {
+    fn inspect_address<W: TryInto<Word<SIZE>>>(&self, address: W, size: usize) -> Result<SIZE, Vec<u16>> {
         let mut curr = match address.try_into() {
             Ok(curr) => curr,
             Err(_) => unreachable!(),
         };
-        print!("0x{curr:04X}: ");
+
+        let mut mem = Vec::with_capacity(size);
+
         for _ in 0..size {
-            print!("0x{:02X} ", self.read(curr)?);
-            let Ok(next) = curr.next() else {
-                print!("<EOF>");
+            mem.push(self.read_word(curr)?);
+            let Ok(next) = curr.next_word() else {
                 break;
             };
             curr = next;
         }
-        println!();
-        Ok(())
+
+        Ok(mem)
     }
 }

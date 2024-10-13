@@ -53,7 +53,7 @@ impl<const SIZE: usize> Addressable<SIZE> for OutputMemory<SIZE> {
         Ok(())
     }
 
-    fn read(&mut self, _: Word<SIZE>) -> super::Result<SIZE, u8> {
+    fn read(&self, _: Word<SIZE>) -> super::Result<SIZE, u8> {
         Ok(0)
     }
 }

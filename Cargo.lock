@@ -298,6 +298,7 @@ version = "0.1.0"
 name = "aya-debugger"
 version = "0.1.0"
 dependencies = [
+ "aya-compiler",
  "aya-core",
  "iced",
 ]

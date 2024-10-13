@@ -17,7 +17,7 @@ impl<const SIZE: usize> Addressable<SIZE> for MappableDevice<SIZE> {
         }
     }
 
-    fn read(&mut self, address: Word<SIZE>) -> Result<SIZE, u8> {
+    fn read(&self, address: Word<SIZE>) -> Result<SIZE, u8> {
         match self {
             MappableDevice::LinearMem(mem) => mem.read(address),
             MappableDevice::Output(mem) => mem.read(address),
@@ -31,7 +31,7 @@ impl<const SIZE: usize> Addressable<SIZE> for MappableDevice<SIZE> {
         }
     }
 
-    fn read_word(&mut self, address: Word<SIZE>) -> Result<SIZE, u16> {
+    fn read_word(&self, address: Word<SIZE>) -> Result<SIZE, u16> {
         match self {
             MappableDevice::LinearMem(mem) => mem.read_word(address),
             MappableDevice::Output(mem) => mem.read_word(address),
@@ -87,7 +87,13 @@ impl<const SIZE: usize> MemoryMapper<SIZE> {
         Ok(())
     }
 
-    fn find_region(&mut self, address: Word<SIZE>) -> Option<&mut MappedRegion<SIZE>> {
+    fn find_region(&self, address: Word<SIZE>) -> Option<&MappedRegion<SIZE>> {
+        self.regions
+            .iter()
+            .find(|region| address >= region.start && address <= region.end)
+    }
+
+    fn find_region_mut(&mut self, address: Word<SIZE>) -> Option<&mut MappedRegion<SIZE>> {
         self.regions
             .iter_mut()
             .find(|region| address >= region.start && address <= region.end)
@@ -95,7 +101,7 @@ impl<const SIZE: usize> MemoryMapper<SIZE> {
 }
 
 impl<const SIZE: usize> Addressable<SIZE> for MemoryMapper<SIZE> {
-    fn read(&mut self, address: Word<SIZE>) -> Result<SIZE, u8> {
+    fn read(&self, address: Word<SIZE>) -> Result<SIZE, u8> {
         let Some(region) = self.find_region(address) else {
             return Err(Error::UnmappedAddress(address));
         };
@@ -107,7 +113,7 @@ impl<const SIZE: usize> Addressable<SIZE> for MemoryMapper<SIZE> {
     }
 
     fn write(&mut self, address: Word<SIZE>, byte: u8) -> Result<SIZE, ()> {
-        let Some(region) = self.find_region(address) else {
+        let Some(region) = self.find_region_mut(address) else {
             return Err(Error::UnmappedAddress(address));
         };
         let address = match region.mapping_mode {
@@ -117,7 +123,7 @@ impl<const SIZE: usize> Addressable<SIZE> for MemoryMapper<SIZE> {
         region.device.write(address, byte)
     }
 
-    fn read_word(&mut self, address: Word<SIZE>) -> Result<SIZE, u16> {
+    fn read_word(&self, address: Word<SIZE>) -> Result<SIZE, u16> {
         let Some(region) = self.find_region(address) else {
             return Err(Error::UnmappedAddress(address));
         };
@@ -129,7 +135,7 @@ impl<const SIZE: usize> Addressable<SIZE> for MemoryMapper<SIZE> {
     }
 
     fn write_word(&mut self, address: Word<SIZE>, byte: u16) -> Result<SIZE, ()> {
-        let Some(region) = self.find_region(address) else {
+        let Some(region) = self.find_region_mut(address) else {
             return Err(Error::UnmappedAddress(address));
         };
         let address = match region.mapping_mode {

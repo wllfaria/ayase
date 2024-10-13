@@ -91,11 +91,9 @@ hlt             ; halts the virtual machine
 
 
 
-```bnf
+```asm
 mov r1, [$42 + !loc - ($05 * ($31 + !var) - $07)]
 
 mov r1, [!var]
-
-mov ::= {}
 
 ```

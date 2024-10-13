@@ -77,6 +77,14 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         Ok(())
     }
 
+    pub fn stack_address(&self) -> u16 {
+        self.registers.fetch(Register::SP)
+    }
+
+    pub fn starting_address(&mut self, address: u16) {
+        self.registers.set(Register::IP, address);
+    }
+
     pub fn run<F: FnMut(&mut Self, &Instruction<SIZE>)>(&mut self, mut f: F) {
         loop {
             match self.step(&mut f) {

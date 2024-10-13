@@ -7,7 +7,6 @@ pub static FONT_BIGGER: u16 = 24;
 pub static FONT_BIG: u16 = 20;
 pub static FONT_REGULAR: u16 = 16;
 pub static FONT_SMALL: u16 = 12;
-pub static FONT_SMALLER: u16 = 10;
 
 pub static SPACING_NORMAL: u16 = 10;
 pub static SPACING_BIG: u16 = 20;

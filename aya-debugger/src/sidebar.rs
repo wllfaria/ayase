@@ -1,5 +1,5 @@
-use iced::widget::{column, container, horizontal_space, row, text, text_input};
-use iced::{border, Alignment, Border, Color, Element, Length};
+use iced::widget::{column, container, horizontal_space, row, text};
+use iced::{border, Alignment, Color, Element, Length};
 
 use crate::style::{
     button, input, margin_x, margin_y, padding_all, padding_x, padding_y, BG_ACCENT, BG_SECONDARY, COLOR_BLUE,
@@ -152,6 +152,6 @@ pub fn update<const SIZE: usize>(state: &mut State<SIZE>, message: Message) {
             Err(_) => {}
         },
         // TODO: make cpu run and respect instruction delay
-        Message::Run => {}
+        Message::Run => state.cpu.run(|_, _| {}),
     }
 }

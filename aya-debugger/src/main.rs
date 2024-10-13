@@ -30,7 +30,6 @@ impl fmt::Display for CpuStatus {
 pub enum LoadFrom {
     #[default]
     None,
-    File,
     Code,
 }
 
@@ -42,17 +41,21 @@ pub struct State<const SIZE: usize> {
     pub load_from: LoadFrom,
     pub code_editor: text_editor::Content,
     pub load_address: String,
+    pub working_mem: u16,
+    pub stack_mem: u16,
 }
 
 impl<const SIZE: usize> Default for State<SIZE> {
     fn default() -> Self {
         Self {
             cpu_status: Default::default(),
-            cpu: Cpu::new(LinearMemory::default()),
             instruction_delay: 100,
             load_from: LoadFrom::None,
             code_editor: text_editor::Content::default(),
             load_address: String::from("0000"),
+            working_mem: 0,
+            stack_mem: 256,
+            cpu: Cpu::new(LinearMemory::default()),
         }
     }
 }
