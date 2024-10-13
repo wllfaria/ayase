@@ -158,6 +158,18 @@ impl TryFrom<&str> for Register {
             "r8" => Ok(Self::R8),
             "sp" => Ok(Self::SP),
             "fp" => Ok(Self::FP),
+            "RET" => Ok(Self::Ret),
+            "IP" => Ok(Self::IP),
+            "R1" => Ok(Self::R1),
+            "R2" => Ok(Self::R2),
+            "R3" => Ok(Self::R3),
+            "R4" => Ok(Self::R4),
+            "R5" => Ok(Self::R5),
+            "R6" => Ok(Self::R6),
+            "R7" => Ok(Self::R7),
+            "R8" => Ok(Self::R8),
+            "SP" => Ok(Self::SP),
+            "FP" => Ok(Self::FP),
             _ => Err(Error::InvalidRegister(format!(
                 "value '{value}' is not a valid register name"
             ))),

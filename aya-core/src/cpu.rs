@@ -61,6 +61,22 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
+    pub fn load_into_address(
+        &mut self,
+        bytecode: impl AsRef<[u8]>,
+        address: impl TryInto<Word<SIZE>>,
+    ) -> Result<SIZE, ()> {
+        let mut address = match address.try_into() {
+            Ok(addr) => addr,
+            Err(_) => unreachable!(),
+        };
+        for byte in bytecode.as_ref() {
+            self.memory.write(address, *byte)?;
+            address = address.next()?;
+        }
+        Ok(())
+    }
+
     pub fn run<F: FnMut(&mut Self, &Instruction<SIZE>)>(&mut self, mut f: F) {
         loop {
             match self.step(&mut f) {
