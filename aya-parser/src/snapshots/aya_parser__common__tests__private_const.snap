@@ -1,0 +1,11 @@
+---
+source: aya-parser/src/common.rs
+expression: result
+---
+Const {
+    name: "some_name",
+    exported: false,
+    value: HexLiteral(
+        "0102",
+    ),
+}

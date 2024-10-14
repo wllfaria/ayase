@@ -28,29 +28,73 @@ fn encode_register<'parser>(value: &'parser Atom<'parser>) -> u8 {
     register.into()
 }
 
-pub fn collect_labels<'assembler>(ast: &'assembler [Instruction<'assembler>]) -> HashMap<&'assembler str, u16> {
-    let mut labels: HashMap<&str, u16> = HashMap::default();
+pub fn collect_symbols<'assembler>(ast: &'assembler [Instruction<'assembler>]) -> HashMap<&'assembler str, u16> {
+    let mut symbols: HashMap<&str, u16> = HashMap::default();
     let mut current_address = 0;
 
-    for instruction in ast {
-        if let Instruction::Nop(Atom::Label(name)) = instruction {
-            labels.insert(name, current_address);
-            continue;
+    for node in ast {
+        match node {
+            Instruction::Nop(Atom::Label(name)) => _ = symbols.insert(name, current_address),
+            Instruction::Nop(Atom::Const { name, value, .. }) => {
+                let Atom::HexLiteral(val) = value.as_ref() else {
+                    unreachable!();
+                };
+                symbols.insert(
+                    name,
+                    u16::from_str_radix(val, 16).expect("number is larger than 16bits"),
+                );
+            }
+            Instruction::Nop(Atom::Data { name, values, size, .. }) => {
+                symbols.insert(name, current_address);
+                let byte_size = if *size == 8 { 1 } else { 2 };
+                let total_size = values.len() * byte_size;
+                current_address += total_size as u16;
+            }
+            _ => current_address += node.kind().byte_size() as u16,
         }
-        current_address += instruction.kind().byte_size() as u16;
     }
 
-    labels
+    symbols
+}
+
+fn encode_data_8(values: &[Atom], bytecode: &mut Vec<u8>) {
+    for value in values {
+        let Atom::HexLiteral(value) = value else {
+            unreachable!();
+        };
+        let value = u8::from_str_radix(value, 16).expect("u8 out of range");
+        bytecode.push(value);
+    }
+}
+fn encode_data_16(values: &[Atom], bytecode: &mut Vec<u8>) {
+    for value in values {
+        let Atom::HexLiteral(value) = value else {
+            unreachable!();
+        };
+        let value = u16::from_str_radix(value, 16).expect("u8 out of range");
+        let upper = ((value & 0xff00) >> 8) as u8;
+        let lower = (value & 0x00ff) as u8;
+        bytecode.push(lower);
+        bytecode.push(upper);
+    }
 }
 
 pub fn compile(source: &str) -> Vec<u8> {
     let ast = aya_parser::parse(source);
 
-    let labels = collect_labels(&ast);
+    let labels = collect_symbols(&ast);
 
     let mut bytecode = vec![];
 
     for instruction in ast.iter() {
+        if let Instruction::Nop(Atom::Data { size, values, .. }) = instruction {
+            if *size == 8 {
+                encode_data_8(values, &mut bytecode);
+            } else {
+                encode_data_16(values, &mut bytecode);
+            }
+        };
+
         if matches!(instruction.kind(), InstructionKind::Nop) {
             continue;
         }
@@ -149,6 +193,25 @@ mod tests {
                 hlt
         "#;
 
+        let result = compile(program);
+        let result = format!("{result:#04X?}");
+        insta::assert_snapshot!(result);
+    }
+
+    #[test]
+    fn constants_and_data_blocks() {
+        // weird spacing here is intended.
+        let program = r#"
+            const some_const = $C0D3
+            +const other_const = $FEFE
+
+            +data8 bytes = { $01,   $02,$03  ,    $04   }
+            data16 bytes = { $1234,   $5678,$9ABC  ,    $DEF0   }
+
+            start:
+                mov &1234, [!some_const]
+                mov &5678, [!other_const]
+        "#;
         let result = compile(program);
         let result = format!("{result:#04X?}");
         insta::assert_snapshot!(result);

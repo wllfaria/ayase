@@ -15,6 +15,17 @@ pub enum Atom<'parser> {
     Var(&'parser str),
     Operator(Operator),
     Label(&'parser str),
+    Data {
+        name: &'parser str,
+        size: u8,
+        exported: bool,
+        values: Vec<Atom<'parser>>,
+    },
+    Const {
+        name: &'parser str,
+        exported: bool,
+        value: Box<Atom<'parser>>,
+    },
     BinaryOp {
         lhs: Box<Atom<'parser>>,
         operator: Operator,

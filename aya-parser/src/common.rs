@@ -1,9 +1,9 @@
 use nom::branch::alt;
 use nom::bytes::complete::{tag, tag_no_case};
-use nom::character::complete::{alpha1, alphanumeric1, anychar, char, hex_digit1, multispace0, one_of};
-use nom::combinator::{map, peek as nom_peek, recognize};
-use nom::multi::many0_count;
-use nom::sequence::{pair, terminated};
+use nom::character::complete::{alpha1, alphanumeric1, anychar, char, hex_digit1, multispace0, one_of, space0};
+use nom::combinator::{map, opt, peek as nom_peek, recognize};
+use nom::multi::{many0_count, separated_list1};
+use nom::sequence::{delimited, pair, terminated};
 use nom::IResult;
 
 use crate::types::{Atom, Operator};
@@ -65,6 +65,66 @@ pub fn label(input: &str) -> IResult<&str, Atom> {
     Ok((input, label))
 }
 
+pub fn constant(input: &str) -> IResult<&str, Atom> {
+    let (input, _) = multispace0(input)?;
+    let (input, exported) = opt(char('+'))(input)?;
+    let exported = exported.is_some();
+    let (input, _) = tag("const")(input)?;
+    let (input, _) = space0(input)?;
+
+    let (input, name) = identifier(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('=')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, val) = hex_literal(input)?;
+    let (input, _) = multispace0(input)?;
+
+    Ok((
+        input,
+        Atom::Const {
+            name,
+            exported,
+            value: Box::new(val),
+        },
+    ))
+}
+
+pub fn data(input: &str) -> IResult<&str, Atom> {
+    let (input, _) = multispace0(input)?;
+    let (input, exported) = opt(char('+'))(input)?;
+    let exported = exported.is_some();
+
+    let (input, _) = tag("data")(input)?;
+    let (input, size) = map(alt((tag("8"), tag("16"))), |s: &str| s.parse::<u8>().unwrap())(input)?;
+
+    let (input, _) = space0(input)?;
+    let (input, name) = identifier(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('=')(input)?;
+    let (input, _) = space0(input)?;
+    let (input, _) = char('{')(input)?;
+    let (input, _) = space0(input)?;
+
+    let (input, values) = terminated(
+        separated_list1(delimited(space0, tag(","), space0), hex_literal),
+        opt(tag(",")),
+    )(input)?;
+
+    let (input, _) = space0(input)?;
+    let (input, _) = char('}')(input)?;
+    let (input, _) = multispace0(input)?;
+
+    Ok((
+        input,
+        Atom::Data {
+            name,
+            size,
+            exported,
+            values,
+        },
+    ))
+}
+
 pub fn hex_literal(input: &str) -> IResult<&str, Atom> {
     let (input, _) = tag("$")(input)?;
     map(hex_digit1, Atom::HexLiteral)(input)
@@ -84,4 +144,51 @@ pub fn operator(input: &str) -> IResult<&str, Atom> {
         )),
         Atom::Operator,
     )(input)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_exported_data_8() {
+        let input = "+data8 some_name = { $01,$02  , $03   , $04 }";
+        let (_, result) = data(input).unwrap();
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_private_data_8() {
+        let input = "data8 some_name = { $01,$02  , $03   , $04 }";
+        let (_, result) = data(input).unwrap();
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_exported_data_16() {
+        let input = "+data16 some_name = { $0102  , $0304 }";
+        let (_, result) = data(input).unwrap();
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_private_data_16() {
+        let input = "data16 some_name = { $0102  , $0304 }";
+        let (_, result) = data(input).unwrap();
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_exported_const() {
+        let input = "+const some_name = $0102";
+        let (_, result) = constant(input).unwrap();
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_private_const() {
+        let input = "const some_name = $0102";
+        let (_, result) = constant(input).unwrap();
+        insta::assert_debug_snapshot!(result);
+    }
 }

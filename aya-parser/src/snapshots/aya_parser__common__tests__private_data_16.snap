@@ -1,0 +1,17 @@
+---
+source: aya-parser/src/common.rs
+expression: result
+---
+Data {
+    name: "some_name",
+    size: 16,
+    exported: false,
+    values: [
+        HexLiteral(
+            "0102",
+        ),
+        HexLiteral(
+            "0304",
+        ),
+    ],
+}
