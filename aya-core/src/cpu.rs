@@ -227,17 +227,76 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 Ok(Instruction::MulRegReg(r1, r2))
             }
 
-            OpCode::LshLitReg => todo!(),
-            OpCode::LshRegReg => todo!(),
-            OpCode::RshLitReg => todo!(),
-            OpCode::RshRegReg => todo!(),
-            OpCode::AndLitReg => todo!(),
-            OpCode::AndRegReg => todo!(),
-            OpCode::OrLitReg => todo!(),
-            OpCode::OrRegReg => todo!(),
-            OpCode::XorLitReg => todo!(),
-            OpCode::XorRegReg => todo!(),
-            OpCode::Not => todo!(),
+            OpCode::LshLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::LshLitReg(reg, lit))
+            }
+            OpCode::LshRegReg => {
+                let r1 = self.next_instruction(InstructionSize::Small)?;
+                let r1 = Register::try_from(r1)?;
+                let r2 = self.next_instruction(InstructionSize::Small)?;
+                let r2 = Register::try_from(r2)?;
+                Ok(Instruction::LshRegReg(r1, r2))
+            }
+            OpCode::RshLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::RshLitReg(reg, lit))
+            }
+            OpCode::RshRegReg => {
+                let r1 = self.next_instruction(InstructionSize::Small)?;
+                let r1 = Register::try_from(r1)?;
+                let r2 = self.next_instruction(InstructionSize::Small)?;
+                let r2 = Register::try_from(r2)?;
+                Ok(Instruction::RshRegReg(r1, r2))
+            }
+            OpCode::AndLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::AndLitReg(reg, lit))
+            }
+            OpCode::AndRegReg => {
+                let r1 = self.next_instruction(InstructionSize::Small)?;
+                let r1 = Register::try_from(r1)?;
+                let r2 = self.next_instruction(InstructionSize::Small)?;
+                let r2 = Register::try_from(r2)?;
+                Ok(Instruction::AndRegReg(r1, r2))
+            }
+            OpCode::OrLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::OrLitReg(reg, lit))
+            }
+            OpCode::OrRegReg => {
+                let r1 = self.next_instruction(InstructionSize::Small)?;
+                let r1 = Register::try_from(r1)?;
+                let r2 = self.next_instruction(InstructionSize::Small)?;
+                let r2 = Register::try_from(r2)?;
+                Ok(Instruction::OrRegReg(r1, r2))
+            }
+            OpCode::XorLitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::XorLitReg(reg, lit))
+            }
+            OpCode::XorRegReg => {
+                let r1 = self.next_instruction(InstructionSize::Small)?;
+                let r1 = Register::try_from(r1)?;
+                let r2 = self.next_instruction(InstructionSize::Small)?;
+                let r2 = Register::try_from(r2)?;
+                Ok(Instruction::XorRegReg(r1, r2))
+            }
+            OpCode::Not => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                Ok(Instruction::Not(reg))
+            }
 
             OpCode::JeqLit => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
@@ -379,6 +438,67 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             Instruction::DecReg(reg) => {
                 let reg_val = self.registers.fetch(reg);
                 self.registers.set(reg, reg_val.wrapping_sub(1));
+            }
+
+            Instruction::LshLitReg(reg, lit) => {
+                let reg_val = self.registers.fetch(reg);
+                let val = reg_val << lit;
+                self.registers.set(reg, val)
+            }
+            Instruction::LshRegReg(r1, r2) => {
+                let r1_val = self.registers.fetch(r1);
+                let r2_val = self.registers.fetch(r2);
+                let val = r1_val << r2_val;
+                self.registers.set(r1, val);
+            }
+            Instruction::RshLitReg(reg, lit) => {
+                let reg_val = self.registers.fetch(reg);
+                let val = reg_val >> lit;
+                self.registers.set(reg, val)
+            }
+            Instruction::RshRegReg(r1, r2) => {
+                let r1_val = self.registers.fetch(r1);
+                let r2_val = self.registers.fetch(r2);
+                let val = r1_val >> r2_val;
+                self.registers.set(r1, val);
+            }
+            Instruction::AndLitReg(reg, lit) => {
+                let reg_val = self.registers.fetch(reg);
+                let val = reg_val & lit;
+                self.registers.set(reg, val)
+            }
+            Instruction::AndRegReg(r1, r2) => {
+                let r1_val = self.registers.fetch(r1);
+                let r2_val = self.registers.fetch(r2);
+                let val = r1_val & r2_val;
+                self.registers.set(r1, val);
+            }
+            Instruction::OrLitReg(reg, lit) => {
+                let reg_val = self.registers.fetch(reg);
+                let val = reg_val | lit;
+                self.registers.set(reg, val)
+            }
+            Instruction::OrRegReg(r1, r2) => {
+                let r1_val = self.registers.fetch(r1);
+                let r2_val = self.registers.fetch(r2);
+                let val = r1_val | r2_val;
+                self.registers.set(r1, val);
+            }
+            Instruction::XorLitReg(reg, lit) => {
+                let reg_val = self.registers.fetch(reg);
+                let val = reg_val ^ lit;
+                self.registers.set(reg, val)
+            }
+            Instruction::XorRegReg(r1, r2) => {
+                let r1_val = self.registers.fetch(r1);
+                let r2_val = self.registers.fetch(r2);
+                let val = r1_val ^ r2_val;
+                self.registers.set(r1, val);
+            }
+            Instruction::Not(reg) => {
+                let reg_val = self.registers.fetch(reg);
+                let val = !reg_val;
+                self.registers.set(reg, val)
             }
 
             Instruction::JeqLit(address, lit) => {

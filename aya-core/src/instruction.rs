@@ -26,6 +26,18 @@ pub enum Instruction<const SIZE: usize> {
     IncReg(Register),
     DecReg(Register),
 
+    LshLitReg(Register, u16),
+    LshRegReg(Register, Register),
+    RshLitReg(Register, u16),
+    RshRegReg(Register, Register),
+    AndLitReg(Register, u16),
+    AndRegReg(Register, Register),
+    OrLitReg(Register, u16),
+    OrRegReg(Register, Register),
+    XorLitReg(Register, u16),
+    XorRegReg(Register, Register),
+    Not(Register),
+
     JeqLit(Word<SIZE>, u16),
     JeqReg(Word<SIZE>, Register),
     JgtLit(Word<SIZE>, u16),
