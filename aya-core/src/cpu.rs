@@ -7,7 +7,7 @@ use crate::register::{self, Register, Registers};
 use crate::word::Word;
 
 #[derive(Debug)]
-pub enum ExecutionFlow {
+pub enum ControlFlow {
     Halt(u16),
     Continue,
 }
@@ -85,19 +85,18 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         self.registers.set(Register::IP, address);
     }
 
-    pub fn run<F: FnMut(&mut Self, &Instruction<SIZE>)>(&mut self, mut f: F) {
+    pub fn run(&mut self) {
         loop {
-            match self.step(&mut f) {
-                Ok(ExecutionFlow::Halt(_)) => break,
-                Ok(ExecutionFlow::Continue) => {}
+            match self.step() {
+                Ok(ControlFlow::Halt(_)) => break,
+                Ok(ControlFlow::Continue) => {}
                 Err(e) => todo!("{e:?}"),
             }
         }
     }
 
-    pub fn step<F: FnMut(&mut Self, &Instruction<SIZE>)>(&mut self, f: &mut F) -> Result<SIZE, ExecutionFlow> {
+    pub fn step(&mut self) -> Result<SIZE, ControlFlow> {
         let instruction = self.fetch()?;
-        f(self, &instruction);
         self.execute(instruction)
     }
 
@@ -379,7 +378,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
-    fn execute(&mut self, instruction: Instruction<SIZE>) -> Result<SIZE, ExecutionFlow> {
+    fn execute(&mut self, instruction: Instruction<SIZE>) -> Result<SIZE, ControlFlow> {
         match instruction {
             Instruction::MovLitReg(reg, val) => self.registers.set(reg, val),
             Instruction::MovRegReg(from, to) => {
@@ -618,9 +617,9 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let prev_frame_ptr = frame_ptr + Word::try_from(frame_size)?;
                 self.registers.set(Register::FP, prev_frame_ptr.into());
             }
-            Instruction::Halt(code) => return Ok(ExecutionFlow::Halt(code)),
+            Instruction::Halt(code) => return Ok(ControlFlow::Halt(code)),
         }
-        Ok(ExecutionFlow::Continue)
+        Ok(ControlFlow::Continue)
     }
 
     fn next_instruction(&mut self, size: InstructionSize) -> Result<SIZE, u16> {

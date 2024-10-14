@@ -1,6 +1,3 @@
-@import "./another.aya" another $3000
-
-
 main:
     mov &0050, $0A
 loop:
@@ -10,11 +7,6 @@ loop:
     inc r2
     inc r2
     inc r2
-    cal &[!some_function]
+    jne &[!loop], $00
 end:
     hlt
-
-// another.aya
-+some_function:
-    mov ....
-    ...

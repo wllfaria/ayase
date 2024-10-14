@@ -145,13 +145,13 @@ pub fn view<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
 
 pub fn update<const SIZE: usize>(state: &mut State<SIZE>, message: Message) {
     match message {
-        Message::Step => _ = state.cpu.step(&mut |_, _| {}),
+        Message::Step => _ = state.cpu.step(),
         Message::DelayChanged(new_delay) => match new_delay.parse::<usize>() {
             Ok(new_delay) => state.instruction_delay = usize::min(new_delay, 5000),
             Err(_) if new_delay.is_empty() => state.instruction_delay = 0,
             Err(_) => {}
         },
         // TODO: make cpu run and respect instruction delay
-        Message::Run => state.cpu.run(|_, _| {}),
+        Message::Run => state.cpu.run(),
     }
 }
