@@ -8,28 +8,43 @@ pub enum Operator {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Atom<'parser> {
+pub enum Ast<'parser> {
+    Instruction(Box<Instruction<'parser>>),
     HexLiteral(&'parser str),
     Address(&'parser str),
     Register(&'parser str),
     Var(&'parser str),
     Operator(Operator),
     Label(&'parser str),
+    FieldAccessor {
+        module: &'parser str,
+        field: &'parser str,
+    },
+    Import {
+        name: &'parser str,
+        path: &'parser str,
+        address: Box<Ast<'parser>>,
+        variables: Vec<Ast<'parser>>,
+    },
+    ImportVar {
+        name: &'parser str,
+        value: Box<Ast<'parser>>,
+    },
     Data {
         name: &'parser str,
         size: u8,
         exported: bool,
-        values: Vec<Atom<'parser>>,
+        values: Vec<Ast<'parser>>,
     },
     Const {
         name: &'parser str,
         exported: bool,
-        value: Box<Atom<'parser>>,
+        value: Box<Ast<'parser>>,
     },
     BinaryOp {
-        lhs: Box<Atom<'parser>>,
+        lhs: Box<Ast<'parser>>,
         operator: Operator,
-        rhs: Box<Atom<'parser>>,
+        rhs: Box<Ast<'parser>>,
     },
 }
 
@@ -45,7 +60,6 @@ pub enum InstructionKind {
     NoArgs,
     SingleReg,
     SingleLit,
-    Nop,
 }
 
 impl InstructionKind {
@@ -61,62 +75,60 @@ impl InstructionKind {
             InstructionKind::NoArgs => 1,
             InstructionKind::SingleReg => 2,
             InstructionKind::SingleLit => 3,
-            InstructionKind::Nop => 0,
         }
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction<'parser> {
-    Nop(Atom<'parser>),
-    MovLitReg(Atom<'parser>, Atom<'parser>),
-    MovRegReg(Atom<'parser>, Atom<'parser>),
-    MovRegMem(Atom<'parser>, Atom<'parser>),
-    MovMemReg(Atom<'parser>, Atom<'parser>),
-    MovLitMem(Atom<'parser>, Atom<'parser>),
-    MovRegPtrReg(Atom<'parser>, Atom<'parser>),
-    AddRegReg(Atom<'parser>, Atom<'parser>),
-    AddLitReg(Atom<'parser>, Atom<'parser>),
-    SubRegReg(Atom<'parser>, Atom<'parser>),
-    SubLitReg(Atom<'parser>, Atom<'parser>),
-    MulRegReg(Atom<'parser>, Atom<'parser>),
-    MulLitReg(Atom<'parser>, Atom<'parser>),
-    LshRegReg(Atom<'parser>, Atom<'parser>),
-    LshLitReg(Atom<'parser>, Atom<'parser>),
-    RshRegReg(Atom<'parser>, Atom<'parser>),
-    RshLitReg(Atom<'parser>, Atom<'parser>),
-    AndRegReg(Atom<'parser>, Atom<'parser>),
-    AndLitReg(Atom<'parser>, Atom<'parser>),
-    OrLitReg(Atom<'parser>, Atom<'parser>),
-    OrRegReg(Atom<'parser>, Atom<'parser>),
-    XorLitReg(Atom<'parser>, Atom<'parser>),
-    XorRegReg(Atom<'parser>, Atom<'parser>),
-    Inc(Atom<'parser>),
-    Dec(Atom<'parser>),
-    Not(Atom<'parser>),
-    JeqLit(Atom<'parser>, Atom<'parser>),
-    JeqReg(Atom<'parser>, Atom<'parser>),
-    JgtLit(Atom<'parser>, Atom<'parser>),
-    JgtReg(Atom<'parser>, Atom<'parser>),
-    JneLit(Atom<'parser>, Atom<'parser>),
-    JneReg(Atom<'parser>, Atom<'parser>),
-    JgeLit(Atom<'parser>, Atom<'parser>),
-    JgeReg(Atom<'parser>, Atom<'parser>),
-    JleLit(Atom<'parser>, Atom<'parser>),
-    JleReg(Atom<'parser>, Atom<'parser>),
-    JltLit(Atom<'parser>, Atom<'parser>),
-    JltReg(Atom<'parser>, Atom<'parser>),
-    PshLit(Atom<'parser>),
-    PshReg(Atom<'parser>),
-    Pop(Atom<'parser>),
-    CalLit(Atom<'parser>),
-    CalReg(Atom<'parser>),
+    MovLitReg(Ast<'parser>, Ast<'parser>),
+    MovRegReg(Ast<'parser>, Ast<'parser>),
+    MovRegMem(Ast<'parser>, Ast<'parser>),
+    MovMemReg(Ast<'parser>, Ast<'parser>),
+    MovLitMem(Ast<'parser>, Ast<'parser>),
+    MovRegPtrReg(Ast<'parser>, Ast<'parser>),
+    AddRegReg(Ast<'parser>, Ast<'parser>),
+    AddLitReg(Ast<'parser>, Ast<'parser>),
+    SubRegReg(Ast<'parser>, Ast<'parser>),
+    SubLitReg(Ast<'parser>, Ast<'parser>),
+    MulRegReg(Ast<'parser>, Ast<'parser>),
+    MulLitReg(Ast<'parser>, Ast<'parser>),
+    LshRegReg(Ast<'parser>, Ast<'parser>),
+    LshLitReg(Ast<'parser>, Ast<'parser>),
+    RshRegReg(Ast<'parser>, Ast<'parser>),
+    RshLitReg(Ast<'parser>, Ast<'parser>),
+    AndRegReg(Ast<'parser>, Ast<'parser>),
+    AndLitReg(Ast<'parser>, Ast<'parser>),
+    OrLitReg(Ast<'parser>, Ast<'parser>),
+    OrRegReg(Ast<'parser>, Ast<'parser>),
+    XorLitReg(Ast<'parser>, Ast<'parser>),
+    XorRegReg(Ast<'parser>, Ast<'parser>),
+    Inc(Ast<'parser>),
+    Dec(Ast<'parser>),
+    Not(Ast<'parser>),
+    JeqLit(Ast<'parser>, Ast<'parser>),
+    JeqReg(Ast<'parser>, Ast<'parser>),
+    JgtLit(Ast<'parser>, Ast<'parser>),
+    JgtReg(Ast<'parser>, Ast<'parser>),
+    JneLit(Ast<'parser>, Ast<'parser>),
+    JneReg(Ast<'parser>, Ast<'parser>),
+    JgeLit(Ast<'parser>, Ast<'parser>),
+    JgeReg(Ast<'parser>, Ast<'parser>),
+    JleLit(Ast<'parser>, Ast<'parser>),
+    JleReg(Ast<'parser>, Ast<'parser>),
+    JltLit(Ast<'parser>, Ast<'parser>),
+    JltReg(Ast<'parser>, Ast<'parser>),
+    PshLit(Ast<'parser>),
+    PshReg(Ast<'parser>),
+    Pop(Ast<'parser>),
+    CalLit(Ast<'parser>),
+    CalReg(Ast<'parser>),
     Ret,
     Hlt,
 }
 
 impl<'parser> Instruction<'parser> {
-    pub fn lhs(&self) -> &Atom<'parser> {
+    pub fn lhs(&self) -> &Ast<'parser> {
         match self {
             Instruction::MovLitReg(lhs, _)
             | Instruction::MovRegReg(lhs, _)
@@ -159,14 +171,13 @@ impl<'parser> Instruction<'parser> {
             | Instruction::CalReg(lhs)
             | Instruction::Inc(lhs)
             | Instruction::Dec(lhs)
-            | Instruction::Nop(lhs)
             | Instruction::Not(lhs) => lhs,
 
             Instruction::Ret | Instruction::Hlt => unreachable!(),
         }
     }
 
-    pub fn rhs(&self) -> &Atom<'parser> {
+    pub fn rhs(&self) -> &Ast<'parser> {
         match self {
             Instruction::MovLitReg(_, rhs)
             | Instruction::MovRegReg(_, rhs)
@@ -211,7 +222,6 @@ impl<'parser> Instruction<'parser> {
             | Instruction::Inc(_)
             | Instruction::Dec(_)
             | Instruction::Not(_)
-            | Instruction::Nop(_)
             | Instruction::Ret
             | Instruction::Hlt => unreachable!(),
         }
@@ -267,8 +277,6 @@ impl<'parser> Instruction<'parser> {
             Instruction::JleReg(_, _) => OpCode::JleReg,
             Instruction::JltLit(_, _) => OpCode::JltLit,
             Instruction::JltReg(_, _) => OpCode::JltReg,
-
-            Instruction::Nop(_) => unreachable!(),
         }
     }
 
@@ -321,7 +329,6 @@ impl<'parser> Instruction<'parser> {
             Instruction::MovRegPtrReg(_, _) => InstructionKind::RegPtrReg,
             Instruction::PshLit(_) | Instruction::CalLit(_) => InstructionKind::SingleLit,
             Instruction::Ret | Instruction::Hlt => InstructionKind::NoArgs,
-            Instruction::Nop(_) => InstructionKind::Nop,
         }
     }
 }

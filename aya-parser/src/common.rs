@@ -6,7 +6,7 @@ use nom::multi::{many0_count, separated_list1};
 use nom::sequence::{delimited, pair, terminated};
 use nom::IResult;
 
-use crate::types::{Atom, Operator};
+use crate::types::{Ast, Operator};
 
 pub mod precedences {
     pub const BASE: u8 = 0;
@@ -21,6 +21,12 @@ pub fn get_precedence(operator: Operator) -> u8 {
     }
 }
 
+pub fn ws<'parser, O, F: Fn(&'parser str) -> IResult<&'parser str, O>>(
+    inner: F,
+) -> impl FnMut(&'parser str) -> IResult<&'parser str, O> {
+    delimited(space0, inner, space0)
+}
+
 pub fn is_terminator(ch: char) -> bool {
     matches!(ch, ']' | ')')
 }
@@ -33,7 +39,7 @@ pub fn general_register(input: &str) -> IResult<&str, &str> {
     recognize(pair(tag_no_case("r"), one_of("12345678")))(input)
 }
 
-pub fn register(input: &str) -> IResult<&str, Atom> {
+pub fn register(input: &str) -> IResult<&str, Ast> {
     map(
         alt((
             general_register,
@@ -42,7 +48,7 @@ pub fn register(input: &str) -> IResult<&str, Atom> {
             tag_no_case("fp"),
             tag_no_case("ret"),
         )),
-        Atom::Register,
+        Ast::Register,
     )(input)
 }
 
@@ -53,19 +59,19 @@ pub fn identifier(input: &str) -> IResult<&str, &str> {
     ))(input)
 }
 
-pub fn variable(input: &str) -> IResult<&str, Atom> {
+pub fn variable(input: &str) -> IResult<&str, Ast> {
     let (input, _) = tag("!")(input)?;
-    map(identifier, Atom::Var)(input)
+    map(identifier, Ast::Var)(input)
 }
 
-pub fn label(input: &str) -> IResult<&str, Atom> {
+pub fn label(input: &str) -> IResult<&str, Ast> {
     let (input, _) = multispace0(input)?;
-    let (input, label) = map(terminated(identifier, char(':')), Atom::Label)(input)?;
+    let (input, label) = map(terminated(identifier, char(':')), Ast::Label)(input)?;
     let (input, _) = multispace0(input)?;
     Ok((input, label))
 }
 
-pub fn constant(input: &str) -> IResult<&str, Atom> {
+pub fn constant(input: &str) -> IResult<&str, Ast> {
     let (input, _) = multispace0(input)?;
     let (input, exported) = opt(char('+'))(input)?;
     let exported = exported.is_some();
@@ -81,7 +87,7 @@ pub fn constant(input: &str) -> IResult<&str, Atom> {
 
     Ok((
         input,
-        Atom::Const {
+        Ast::Const {
             name,
             exported,
             value: Box::new(val),
@@ -89,7 +95,7 @@ pub fn constant(input: &str) -> IResult<&str, Atom> {
     ))
 }
 
-pub fn data(input: &str) -> IResult<&str, Atom> {
+pub fn data(input: &str) -> IResult<&str, Ast> {
     let (input, _) = multispace0(input)?;
     let (input, exported) = opt(char('+'))(input)?;
     let exported = exported.is_some();
@@ -116,7 +122,7 @@ pub fn data(input: &str) -> IResult<&str, Atom> {
 
     Ok((
         input,
-        Atom::Data {
+        Ast::Data {
             name,
             size,
             exported,
@@ -125,24 +131,24 @@ pub fn data(input: &str) -> IResult<&str, Atom> {
     ))
 }
 
-pub fn hex_literal(input: &str) -> IResult<&str, Atom> {
+pub fn hex_literal(input: &str) -> IResult<&str, Ast> {
     let (input, _) = tag("$")(input)?;
-    map(hex_digit1, Atom::HexLiteral)(input)
+    map(hex_digit1, Ast::HexLiteral)(input)
 }
 
-pub fn address(input: &str) -> IResult<&str, Atom> {
+pub fn address(input: &str) -> IResult<&str, Ast> {
     let (input, _) = tag("&")(input)?;
-    map(hex_digit1, Atom::Address)(input)
+    map(hex_digit1, Ast::Address)(input)
 }
 
-pub fn operator(input: &str) -> IResult<&str, Atom> {
+pub fn operator(input: &str) -> IResult<&str, Ast> {
     map(
         alt((
             map(char('+'), |_| Operator::Add),
             map(char('-'), |_| Operator::Sub),
             map(char('*'), |_| Operator::Mul),
         )),
-        Atom::Operator,
+        Ast::Operator,
     )(input)
 }
 

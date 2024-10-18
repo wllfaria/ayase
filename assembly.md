@@ -1,3 +1,7 @@
+# module resolution
+
+when starting to 
+
 ```asm
 ; Move Operations
 mov r1 $3000    ; mov literal into register (MovLitReg)

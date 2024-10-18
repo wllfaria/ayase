@@ -6,9 +6,9 @@ use nom::IResult;
 
 use crate::common::{address, hex_literal, register};
 use crate::expressions::square_bracketed_expr;
-use crate::types::{Atom, Instruction};
+use crate::types::{Ast, Instruction};
 
-pub fn lit_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'parser>>(
+pub fn lit_reg<'parser, M: Fn(Ast<'parser>, Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,
@@ -29,7 +29,7 @@ pub fn lit_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     Ok((input, mapper(lhs, rhs)))
 }
 
-pub fn reg_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'parser>>(
+pub fn reg_reg<'parser, M: Fn(Ast<'parser>, Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,
@@ -50,7 +50,7 @@ pub fn reg_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     Ok((input, mapper(lhs, rhs)))
 }
 
-pub fn reg_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'parser>>(
+pub fn reg_mem<'parser, M: Fn(Ast<'parser>, Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,
@@ -71,7 +71,7 @@ pub fn reg_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     Ok((input, mapper(lhs, rhs)))
 }
 
-pub fn mem_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'parser>>(
+pub fn mem_reg<'parser, M: Fn(Ast<'parser>, Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,
@@ -92,7 +92,7 @@ pub fn mem_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     Ok((input, mapper(lhs, rhs)))
 }
 
-pub fn lit_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'parser>>(
+pub fn lit_mem<'parser, M: Fn(Ast<'parser>, Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,
@@ -113,7 +113,7 @@ pub fn lit_mem<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'pars
     Ok((input, mapper(lhs, rhs)))
 }
 
-pub fn reg_ptr_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'parser>>(
+pub fn reg_ptr_reg<'parser, M: Fn(Ast<'parser>, Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,
@@ -134,7 +134,7 @@ pub fn reg_ptr_reg<'parser, M: Fn(Atom<'parser>, Atom<'parser>) -> Instruction<'
     Ok((input, mapper(lhs, rhs)))
 }
 
-pub fn single_reg<'parser, M: Fn(Atom<'parser>) -> Instruction<'parser>>(
+pub fn single_reg<'parser, M: Fn(Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,
@@ -149,7 +149,7 @@ pub fn single_reg<'parser, M: Fn(Atom<'parser>) -> Instruction<'parser>>(
     Ok((input, mapper(reg)))
 }
 
-pub fn single_lit<'parser, M: Fn(Atom<'parser>) -> Instruction<'parser>>(
+pub fn single_lit<'parser, M: Fn(Ast<'parser>) -> Instruction<'parser>>(
     input: &'parser str,
     prefix: &'parser str,
     mapper: M,

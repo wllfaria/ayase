@@ -1,0 +1,12 @@
+---
+source: aya-parser/src/modules.rs
+expression: import
+---
+Import {
+    name: "module_name",
+    path: "./path.aya",
+    address: Address(
+        "fefe",
+    ),
+    variables: [],
+}

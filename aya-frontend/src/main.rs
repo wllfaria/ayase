@@ -7,8 +7,7 @@ use aya_core::MEMORY_SIZE;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args();
     let filename = args.nth(1).expect("provide a program file");
-    let content = fs::read_to_string(filename).expect("unable to read file");
-    let program = aya_compiler::compile(&content);
+    let program = aya_compiler::compile(&filename);
 
     let memory = LinearMemory::<MEMORY_SIZE>::default();
     let output = OutputMemory::<MEMORY_SIZE>::default();

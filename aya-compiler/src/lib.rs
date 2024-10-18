@@ -1,15 +1,18 @@
+mod file;
+
 use std::collections::HashMap;
+use std::path::Path;
 
 use aya_core::register::Register;
-use aya_parser::{Atom, Instruction, InstructionKind};
+use aya_parser::{Ast, InstructionKind};
 
-fn encode_literal_or_address<'parser>(atom: &'parser Atom<'parser>, symbol_table: &HashMap<&str, u16>) -> (u8, u8) {
+fn encode_literal_or_address<'parser>(atom: &'parser Ast<'parser>, symbol_table: &HashMap<&str, u16>) -> (u8, u8) {
     let hex = match atom {
-        Atom::Var(name) => {
+        Ast::Var(name) => {
             let address = symbol_table.get(name).expect("undefined label");
             *address
         }
-        Atom::HexLiteral(value) | Atom::Address(value) => {
+        Ast::HexLiteral(value) | Ast::Address(value) => {
             u16::from_str_radix(value, 16).expect("value out of bounds for a u16")
         }
         _ => unreachable!(),
@@ -20,23 +23,23 @@ fn encode_literal_or_address<'parser>(atom: &'parser Atom<'parser>, symbol_table
     (lower, upper)
 }
 
-fn encode_register<'parser>(value: &'parser Atom<'parser>) -> u8 {
-    let Atom::Register(name) = value else {
+fn encode_register<'parser>(value: &'parser Ast<'parser>) -> u8 {
+    let Ast::Register(name) = value else {
         unreachable!();
     };
     let register = Register::try_from(*name).unwrap();
     register.into()
 }
 
-pub fn collect_symbols<'assembler>(ast: &'assembler [Instruction<'assembler>]) -> HashMap<&'assembler str, u16> {
+pub fn collect_symbols<'assembler>(ast: &'assembler [Ast<'assembler>]) -> HashMap<&'assembler str, u16> {
     let mut symbols: HashMap<&str, u16> = HashMap::default();
     let mut current_address = 0;
 
     for node in ast {
         match node {
-            Instruction::Nop(Atom::Label(name)) => _ = symbols.insert(name, current_address),
-            Instruction::Nop(Atom::Const { name, value, .. }) => {
-                let Atom::HexLiteral(val) = value.as_ref() else {
+            Ast::Label(name) => _ = symbols.insert(name, current_address),
+            Ast::Const { name, value, .. } => {
+                let Ast::HexLiteral(val) = value.as_ref() else {
                     unreachable!();
                 };
                 symbols.insert(
@@ -44,31 +47,32 @@ pub fn collect_symbols<'assembler>(ast: &'assembler [Instruction<'assembler>]) -
                     u16::from_str_radix(val, 16).expect("number is larger than 16bits"),
                 );
             }
-            Instruction::Nop(Atom::Data { name, values, size, .. }) => {
+            Ast::Data { name, values, size, .. } => {
                 symbols.insert(name, current_address);
                 let byte_size = if *size == 8 { 1 } else { 2 };
                 let total_size = values.len() * byte_size;
                 current_address += total_size as u16;
             }
-            _ => current_address += node.kind().byte_size() as u16,
+            Ast::Instruction(instr) => current_address += instr.kind().byte_size() as u16,
+            _ => {}
         }
     }
 
     symbols
 }
 
-fn encode_data_8(values: &[Atom], bytecode: &mut Vec<u8>) {
+fn encode_data_8(values: &[Ast], bytecode: &mut Vec<u8>) {
     for value in values {
-        let Atom::HexLiteral(value) = value else {
+        let Ast::HexLiteral(value) = value else {
             unreachable!();
         };
         let value = u8::from_str_radix(value, 16).expect("u8 out of range");
         bytecode.push(value);
     }
 }
-fn encode_data_16(values: &[Atom], bytecode: &mut Vec<u8>) {
+fn encode_data_16(values: &[Ast], bytecode: &mut Vec<u8>) {
     for value in values {
-        let Atom::HexLiteral(value) = value else {
+        let Ast::HexLiteral(value) = value else {
             unreachable!();
         };
         let value = u16::from_str_radix(value, 16).expect("u8 out of range");
@@ -79,82 +83,134 @@ fn encode_data_16(values: &[Atom], bytecode: &mut Vec<u8>) {
     }
 }
 
-pub fn compile(source: &str) -> Vec<u8> {
-    let ast = aya_parser::parse(source);
+// NOTE:
+// when compiling the high level steps are:
+// 1.   Parse the source file which this program was called with, that is the main module
+//
+// 2.   From the ast generated on the previous step, go over every import.
+//
+// 2.1  when parsing an import, we will generate an AST for that module aswell, and add
+//      an entry of that module as a dependency of the module that imported it, also
+//      storing this as an already parsed module, so that if other modules also import it
+//      we avoid parsing it again.
+//
+// 2.2  from that, we should recursively parse every module thats on the program tree of
+//      imports, which will make us a list of modules and their dependencies.
+//
+//      We will use that list to sort modules based on its dependencies, so we can start
+//      module resolution from modules that have no dependencies and walk our way up to
+//      the modules with more dependencies.
+//
+// 3.   when resolving a module, we need to keep track of which labels, constants or data
+//      the given module exports, as items not exported cannot be imported by other
+//      modules.
+//
+// 3.1  we will walk the resolution from the module with less dependencies to the module
+//      with more dependencies, we should also never allow for cyclic dependencies.
+//
+// 3.2  cyclic dependencies are determined if a module depends on other module that also
+//      depends on the former one, a visual representation would be something like:
+//
+//                          +-------+                +-------+
+//                          | MOD A | -------------> | MOD B |
+//                          +-------+                +-------+
+//                              ^                        |
+//                              |                        v
+//                              |                    +-------+
+//                              +------------------- | MOD C |
+//                                                   +-------+
 
-    let labels = collect_symbols(&ast);
+pub fn compile<S: AsRef<Path>>(source: S) -> Vec<u8> {
+    let source = file::load_module_from_path(&source).unwrap();
+    let ast = aya_parser::parse(&source);
+    let mut main = Module { path: source.as_ref() };
+    parse_module(&source);
+    vec![]
+    //let source = file::load_module_from_path(source).unwrap();
+    //let ast = aya_parser::parse(&source);
+    //let symbols = collect_symbols(&ast);
+    //
+    //let mut bytecode = vec![];
+    //
+    //for node in ast.iter() {
+    //    if let Ast::Data { size, values, .. } = node {
+    //        if *size == 8 {
+    //            encode_data_8(values, &mut bytecode);
+    //        } else {
+    //            encode_data_16(values, &mut bytecode);
+    //        }
+    //    };
+    //
+    //    let Ast::Instruction(instruction) = node else {
+    //        continue;
+    //    };
+    //
+    //    bytecode.push(instruction.opcode().into());
+    //
+    //    match instruction.kind() {
+    //        InstructionKind::LitReg | InstructionKind::MemReg => {
+    //            let lhs = instruction.lhs();
+    //            let rhs = instruction.rhs();
+    //            let register = encode_register(lhs);
+    //            let (lower, upper) = encode_literal_or_address(rhs, &symbols);
+    //            bytecode.push(register);
+    //            bytecode.push(lower);
+    //            bytecode.push(upper);
+    //        }
+    //        InstructionKind::RegLit | InstructionKind::RegMem => {
+    //            let lhs = instruction.lhs();
+    //            let rhs = instruction.rhs();
+    //            let (lower, upper) = encode_literal_or_address(lhs, &symbols);
+    //            let register = encode_register(rhs);
+    //            bytecode.push(lower);
+    //            bytecode.push(upper);
+    //            bytecode.push(register);
+    //        }
+    //        InstructionKind::RegReg | InstructionKind::RegPtrReg => {
+    //            let lhs = instruction.lhs();
+    //            let rhs = instruction.rhs();
+    //            let dest = encode_register(lhs);
+    //            let from = encode_register(rhs);
+    //            bytecode.push(dest);
+    //            bytecode.push(from);
+    //        }
+    //        InstructionKind::LitMem => {
+    //            let lhs = instruction.lhs();
+    //            let rhs = instruction.rhs();
+    //            let (lower, upper) = encode_literal_or_address(lhs, &symbols);
+    //            bytecode.push(lower);
+    //            bytecode.push(upper);
+    //            let (lower, upper) = encode_literal_or_address(rhs, &symbols);
+    //            bytecode.push(lower);
+    //            bytecode.push(upper);
+    //        }
+    //        InstructionKind::SingleReg => {
+    //            let lhs = instruction.lhs();
+    //            let register = encode_register(lhs);
+    //            bytecode.push(register);
+    //        }
+    //        InstructionKind::SingleLit => {
+    //            let lhs = instruction.lhs();
+    //            let (lower, upper) = encode_literal_or_address(lhs, &symbols);
+    //            bytecode.push(lower);
+    //            bytecode.push(upper);
+    //        }
+    //        InstructionKind::NoArgs => {}
+    //    }
+    //}
+    //
+    //bytecode
+}
 
-    let mut bytecode = vec![];
+#[derive(Debug)]
+struct Module<'comp> {
+    path: &'comp str,
+}
 
-    for instruction in ast.iter() {
-        if let Instruction::Nop(Atom::Data { size, values, .. }) = instruction {
-            if *size == 8 {
-                encode_data_8(values, &mut bytecode);
-            } else {
-                encode_data_16(values, &mut bytecode);
-            }
-        };
-
-        if matches!(instruction.kind(), InstructionKind::Nop) {
-            continue;
-        }
-
-        bytecode.push(instruction.opcode().into());
-
-        match instruction.kind() {
-            InstructionKind::LitReg | InstructionKind::MemReg => {
-                let lhs = instruction.lhs();
-                let rhs = instruction.rhs();
-                let register = encode_register(lhs);
-                let (lower, upper) = encode_literal_or_address(rhs, &labels);
-                bytecode.push(register);
-                bytecode.push(lower);
-                bytecode.push(upper);
-            }
-            InstructionKind::RegLit | InstructionKind::RegMem => {
-                let lhs = instruction.lhs();
-                let rhs = instruction.rhs();
-                let (lower, upper) = encode_literal_or_address(lhs, &labels);
-                let register = encode_register(rhs);
-                bytecode.push(lower);
-                bytecode.push(upper);
-                bytecode.push(register);
-            }
-            InstructionKind::RegReg | InstructionKind::RegPtrReg => {
-                let lhs = instruction.lhs();
-                let rhs = instruction.rhs();
-                let dest = encode_register(lhs);
-                let from = encode_register(rhs);
-                bytecode.push(dest);
-                bytecode.push(from);
-            }
-            InstructionKind::LitMem => {
-                let lhs = instruction.lhs();
-                let rhs = instruction.rhs();
-                let (lower, upper) = encode_literal_or_address(lhs, &labels);
-                bytecode.push(lower);
-                bytecode.push(upper);
-                let (lower, upper) = encode_literal_or_address(rhs, &labels);
-                bytecode.push(lower);
-                bytecode.push(upper);
-            }
-            InstructionKind::SingleReg => {
-                let lhs = instruction.lhs();
-                let register = encode_register(lhs);
-                bytecode.push(register);
-            }
-            InstructionKind::SingleLit => {
-                let lhs = instruction.lhs();
-                let (lower, upper) = encode_literal_or_address(lhs, &labels);
-                bytecode.push(lower);
-                bytecode.push(upper);
-            }
-            InstructionKind::NoArgs => {}
-            InstructionKind::Nop => unreachable!(),
-        }
-    }
-
-    bytecode
+fn parse_module<S>(source: S)
+where
+    S: AsRef<Path>,
+{
 }
 
 #[cfg(test)]
