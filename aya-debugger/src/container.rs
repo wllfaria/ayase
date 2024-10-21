@@ -95,7 +95,7 @@ fn working_memory<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message
                 row![
                     container(row![
                         text("Starting position:").color(COLOR_TEXT),
-                        text(format!("{:04X}", state.working_mem)).color(COLOR_TEXT)
+                        text(format!("{:04X}", state.working_mem * 16)).color(COLOR_TEXT)
                     ])
                     .padding(padding_all(SPACING_NORMAL))
                     .style(|_| container::Style::default()
@@ -254,10 +254,10 @@ pub fn update<const SIZE: usize>(state: &mut State<SIZE>, message: Message) {
             }
         }
         Message::ConfirmLoad => {
-            //let bytecode = aya_compiler::compile(&state.code_editor.text());
-            //let address = u16::from_str_radix(&state.load_address, 16).unwrap_or(0x0000);
-            //state.cpu.load_into_address(bytecode, address).unwrap();
-            //state.load_from = LoadFrom::None;
+            let (_, bytecode) = aya_compiler::compile(state.code_editor.text());
+            let address = u16::from_str_radix(&state.load_address, 16).unwrap_or(0x0000);
+            state.cpu.load_into_address(bytecode, address).unwrap();
+            state.load_from = LoadFrom::None;
         }
         Message::CancelLoad => state.load_from = LoadFrom::None,
     }

@@ -98,7 +98,7 @@ fn register_section<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Messa
     column![
         text("Registers").color(COLOR_TEXT).size(FONT_BIG),
         margin_y(10),
-        register(state, "RET", None),
+        register(state, "ACC", None),
         margin_y(5),
         register(state, "IP", Some(COLOR_BLUE)),
         margin_y(5),
