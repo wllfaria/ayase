@@ -1,9 +1,0 @@
----
-source: aya-parser/src/instructions/cal.rs
-expression: instruction
----
-CalReg(
-    Register(
-        "r2",
-    ),
-)

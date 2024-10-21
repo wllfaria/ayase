@@ -1,9 +1,0 @@
----
-source: aya-parser/src/instructions/dec.rs
-expression: instruction
----
-Dec(
-    Register(
-        "r1",
-    ),
-)

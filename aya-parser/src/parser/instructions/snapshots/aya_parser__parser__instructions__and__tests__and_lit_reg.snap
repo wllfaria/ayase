@@ -1,0 +1,20 @@
+---
+source: aya-parser/src/parser/instructions/and.rs
+expression: result
+---
+Instruction(
+    AndLitReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+        HexLiteral(
+            ByteOffset {
+                start: 9,
+                end: 13,
+            },
+        ),
+    ),
+)

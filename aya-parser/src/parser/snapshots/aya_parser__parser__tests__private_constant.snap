@@ -1,0 +1,21 @@
+---
+source: aya-parser/src/parser/mod.rs
+expression: result
+---
+Ast {
+    statements: [
+        Const {
+            name: ByteOffset {
+                start: 6,
+                end: 10,
+            },
+            exported: false,
+            value: HexLiteral(
+                ByteOffset {
+                    start: 14,
+                    end: 18,
+                },
+            ),
+        },
+    ],
+}

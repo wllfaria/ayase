@@ -1,5 +1,0 @@
----
-source: aya-parser/src/instructions/hlt.rs
-expression: instruction
----
-Hlt

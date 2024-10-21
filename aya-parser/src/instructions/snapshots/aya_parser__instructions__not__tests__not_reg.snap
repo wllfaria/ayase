@@ -1,9 +1,0 @@
----
-source: aya-parser/src/instructions/not.rs
-expression: instruction
----
-Not(
-    Register(
-        "r1",
-    ),
-)

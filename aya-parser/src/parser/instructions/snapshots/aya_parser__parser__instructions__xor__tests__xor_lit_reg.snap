@@ -1,0 +1,20 @@
+---
+source: aya-parser/src/parser/instructions/xor.rs
+expression: result
+---
+Instruction(
+    XorLitReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+        HexLiteral(
+            ByteOffset {
+                start: 9,
+                end: 13,
+            },
+        ),
+    ),
+)

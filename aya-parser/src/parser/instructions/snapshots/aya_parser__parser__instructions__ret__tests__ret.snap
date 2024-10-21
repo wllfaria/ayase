@@ -1,0 +1,7 @@
+---
+source: aya-parser/src/parser/instructions/ret.rs
+expression: result
+---
+Instruction(
+    Ret,
+)

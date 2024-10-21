@@ -1,9 +1,0 @@
----
-source: aya-parser/src/instructions/pop.rs
-expression: instruction
----
-Pop(
-    Register(
-        "r2",
-    ),
-)

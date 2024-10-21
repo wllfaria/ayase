@@ -1,0 +1,7 @@
+---
+source: aya-parser/src/parser/instructions/hlt.rs
+expression: result
+---
+Instruction(
+    Hlt,
+)

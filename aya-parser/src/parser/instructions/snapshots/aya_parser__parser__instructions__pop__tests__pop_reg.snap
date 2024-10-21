@@ -1,0 +1,14 @@
+---
+source: aya-parser/src/parser/instructions/pop.rs
+expression: result
+---
+Instruction(
+    Pop(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+    ),
+)

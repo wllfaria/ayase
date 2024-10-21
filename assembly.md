@@ -12,13 +12,13 @@ mov &3000 $abcd ; mov literal into memory (MovLitMem)
 mov r1 &r2      ; mov register pointer into register (MovRegPtrReg)
 
 ; Complex move operations
-mov &[r1 + $0010] r2     ; mov value on r2 into the address pointed by r2 + literal
+mov &[r1 + $0010], r2     ; mov value on r2 into the address pointed by r2 + literal
 
 ; binary operations
 add r1 r2       ; add register into register (AddRegReg)
 add r1 $0010    ; add literal into register (AddLitReg)
+add r1 $0010    ; add literal into register (AddLitReg)
 sub r1 $0010    ; sub literal from register (SubLitReg)
-sub $0010 r1    ; sub register from literal (SubRegLit)
 sub r1 r2       ; sub register from register (SubRegReg)
 inc r1          ; increment register (IncReg)
 dec r1          ; decrement register (DecReg)

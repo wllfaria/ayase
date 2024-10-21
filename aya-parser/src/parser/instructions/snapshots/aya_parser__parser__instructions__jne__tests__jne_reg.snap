@@ -1,0 +1,20 @@
+---
+source: aya-parser/src/parser/instructions/jne.rs
+expression: result
+---
+Instruction(
+    JneReg(
+        Address(
+            ByteOffset {
+                start: 7,
+                end: 11,
+            },
+        ),
+        Register(
+            ByteOffset {
+                start: 14,
+                end: 16,
+            },
+        ),
+    ),
+)

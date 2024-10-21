@@ -1,0 +1,14 @@
+---
+source: aya-parser/src/parser/instructions/call.rs
+expression: result
+---
+Instruction(
+    CallLit(
+        Address(
+            ByteOffset {
+                start: 8,
+                end: 12,
+            },
+        ),
+    ),
+)

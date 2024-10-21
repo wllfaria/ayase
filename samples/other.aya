@@ -1,0 +1,3 @@
+import "./module.aya" MyModule &[$0000] {}
+
++const exported_val = $fefe

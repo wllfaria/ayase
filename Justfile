@@ -5,7 +5,7 @@
     cargo r --bin ayadbg
 
 @test:
-    cargo test --workspace -- --nocapture
+    cargo test --workspace
 
 @review:
     cargo insta review

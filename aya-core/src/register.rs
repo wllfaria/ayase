@@ -21,7 +21,7 @@ type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 pub enum Register {
-    Ret,
+    Acc,
     IP,
     R1,
     R2,
@@ -38,7 +38,7 @@ pub enum Register {
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Register::Ret => std::fmt::Display::fmt("RET", f),
+            Register::Acc => std::fmt::Display::fmt("ACC", f),
             Register::IP => std::fmt::Display::fmt("IP", f),
             Register::R1 => std::fmt::Display::fmt("R1", f),
             Register::R2 => std::fmt::Display::fmt("R2", f),
@@ -65,7 +65,7 @@ impl Register {
 
     pub fn iter() -> impl Iterator<Item = Register> {
         [
-            Register::Ret,
+            Register::Acc,
             Register::IP,
             Register::R1,
             Register::R2,
@@ -105,7 +105,7 @@ impl TryFrom<u16> for Register {
 
     fn try_from(value: u16) -> Result<Self> {
         match value {
-            0 => Ok(Register::Ret),
+            0 => Ok(Register::Acc),
             2 => Ok(Register::R1),
             3 => Ok(Register::R2),
             4 => Ok(Register::R3),
@@ -146,7 +146,7 @@ impl TryFrom<&str> for Register {
 
     fn try_from(value: &str) -> Result<Self> {
         match value {
-            "ret" => Ok(Self::Ret),
+            "acc" => Ok(Self::Acc),
             "ip" => Ok(Self::IP),
             "r1" => Ok(Self::R1),
             "r2" => Ok(Self::R2),
@@ -158,7 +158,7 @@ impl TryFrom<&str> for Register {
             "r8" => Ok(Self::R8),
             "sp" => Ok(Self::SP),
             "fp" => Ok(Self::FP),
-            "RET" => Ok(Self::Ret),
+            "ACC" => Ok(Self::Acc),
             "IP" => Ok(Self::IP),
             "R1" => Ok(Self::R1),
             "R2" => Ok(Self::R2),

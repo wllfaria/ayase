@@ -1,9 +1,0 @@
----
-source: aya-parser/src/instructions/inc.rs
-expression: instruction
----
-Inc(
-    Register(
-        "r1",
-    ),
-)

@@ -1,0 +1,14 @@
+---
+source: aya-parser/src/parser/instructions/inc.rs
+expression: result
+---
+Instruction(
+    Inc(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+    ),
+)
