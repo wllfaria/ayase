@@ -3,6 +3,7 @@ mod file;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 
+use aya_core::op_code::OpCode;
 use aya_core::register::Register;
 use aya_parser::{Ast, InstructionKind, Statement};
 
@@ -27,12 +28,7 @@ fn resolve_variable(name: &str, modules: &mut [Module<'_>], module_idx: usize) -
     panic!("variable {name} doesnt exist");
 }
 
-fn encode_literal_or_address(
-    source: &str,
-    node: &Statement,
-    modules: &mut [Module<'_>],
-    module_idx: usize,
-) -> (u8, u8) {
+fn encode_literal_or_address(source: &str, node: &Statement, modules: &mut [Module<'_>], module_idx: usize) -> [u8; 2] {
     let hex = match node {
         Statement::Var(name) => {
             let name = &source[name.start..name.end];
@@ -45,9 +41,7 @@ fn encode_literal_or_address(
         _ => unreachable!(),
     };
 
-    let upper = ((hex & 0xff00) >> 8) as u8;
-    let lower = (hex & 0x00ff) as u8;
-    (lower, upper)
+    hex.to_le_bytes()
 }
 
 fn encode_register(source: &str, value: &Statement) -> u8 {
@@ -120,8 +114,7 @@ fn encode_data_16(source: &str, values: &[Statement], bytecode: &mut Vec<u8>) {
         };
         let value = &source[value.start..value.end];
         let value = u16::from_str_radix(value, 16).expect("u8 out of range");
-        let upper = ((value & 0xff00) >> 8) as u8;
-        let lower = (value & 0x00ff) as u8;
+        let [lower, upper] = value.to_le_bytes();
         bytecode.push(lower);
         bytecode.push(upper);
     }
@@ -248,7 +241,7 @@ fn compile_module<'comp>(
                 let lhs = instruction.lhs();
                 let rhs = instruction.rhs();
                 let register = encode_register(source, lhs);
-                let (lower, upper) = encode_literal_or_address(source, rhs, modules, module_idx);
+                let [lower, upper] = encode_literal_or_address(source, rhs, modules, module_idx);
                 bytecode.push(register);
                 bytecode.push(lower);
                 bytecode.push(upper);
@@ -256,7 +249,7 @@ fn compile_module<'comp>(
             InstructionKind::RegLit | InstructionKind::RegMem => {
                 let lhs = instruction.lhs();
                 let rhs = instruction.rhs();
-                let (lower, upper) = encode_literal_or_address(source, lhs, modules, module_idx);
+                let [lower, upper] = encode_literal_or_address(source, lhs, modules, module_idx);
                 let register = encode_register(source, rhs);
                 bytecode.push(lower);
                 bytecode.push(upper);
@@ -273,10 +266,10 @@ fn compile_module<'comp>(
             InstructionKind::LitMem => {
                 let lhs = instruction.lhs();
                 let rhs = instruction.rhs();
-                let (lower, upper) = encode_literal_or_address(source, lhs, modules, module_idx);
+                let [lower, upper] = encode_literal_or_address(source, lhs, modules, module_idx);
                 bytecode.push(lower);
                 bytecode.push(upper);
-                let (lower, upper) = encode_literal_or_address(source, rhs, modules, module_idx);
+                let [lower, upper] = encode_literal_or_address(source, rhs, modules, module_idx);
                 bytecode.push(lower);
                 bytecode.push(upper);
             }
@@ -287,7 +280,7 @@ fn compile_module<'comp>(
             }
             InstructionKind::SingleLit => {
                 let lhs = instruction.lhs();
-                let (lower, upper) = encode_literal_or_address(source, lhs, modules, module_idx);
+                let [lower, upper] = encode_literal_or_address(source, lhs, modules, module_idx);
                 bytecode.push(lower);
                 bytecode.push(upper);
             }
@@ -296,12 +289,12 @@ fn compile_module<'comp>(
     }
 }
 
-fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> (u16, Vec<u8>) {
+fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> Vec<u8> {
     let mut sources = HashMap::new();
     let mut modules = vec![];
     let mut asts = vec![];
     let mut visited = HashSet::default();
-    let mut bytecode = vec![];
+    let mut bytecode = vec![0, 0, 0];
     let path = path.as_ref().to_path_buf();
 
     process_module(
@@ -323,6 +316,17 @@ fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> (u1
         compile_module(source, ast, idx, &mut modules, &mut bytecode);
     }
 
+    set_starting_jump(path, &modules, &mut bytecode);
+
+    bytecode
+}
+
+pub fn compile<P: AsRef<Path> + std::fmt::Debug>(path: P) -> Vec<u8> {
+    let code = file::load_module_from_path(path.as_ref()).unwrap();
+    compile_inner(code, path)
+}
+
+fn set_starting_jump(path: PathBuf, modules: &[Module], bytecode: &mut [u8]) {
     let start = modules
         .iter()
         .find(|m| m.path == path)
@@ -332,12 +336,10 @@ fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> (u1
         .copied()
         .unwrap_or_default();
 
-    (start, bytecode)
-}
-
-pub fn compile<P: AsRef<Path> + std::fmt::Debug>(path: P) -> (u16, Vec<u8>) {
-    let code = file::load_module_from_path(path.as_ref()).unwrap();
-    compile_inner(code, path)
+    let [lower, upper] = start.to_le_bytes();
+    bytecode[0] = OpCode::Jmp.into();
+    bytecode[1] = lower;
+    bytecode[2] = upper;
 }
 
 #[cfg(test)]

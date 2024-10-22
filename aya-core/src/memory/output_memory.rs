@@ -37,9 +37,7 @@ impl<const SIZE: usize> Addressable<SIZE> for OutputMemory<SIZE> {
     }
 
     fn write_word(&mut self, address: Word<SIZE>, word: u16) -> super::Result<SIZE, ()> {
-        let ch = (word & 0x00ff) as u8;
-        let command = ((word & 0xff00) >> 8) as u8;
-
+        let [ch, command] = word.to_le_bytes();
         match command.into() {
             OutputCommand::ClearScreen => clear_screen(),
             OutputCommand::None => (),

@@ -7,7 +7,7 @@ use aya_core::MEMORY_SIZE;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args();
     let filename = args.nth(1).expect("provide a program file");
-    let (start, program) = aya_compiler::compile(&filename);
+    let program = aya_compiler::compile(&filename);
 
     let memory = LinearMemory::<MEMORY_SIZE>::default();
     let output = OutputMemory::<MEMORY_SIZE>::default();
@@ -17,7 +17,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     memory_mapper.map(output, 0x3000, 0x30ff, MappingMode::Remap)?;
 
     let mut cpu = Cpu::new(memory_mapper);
-    cpu.starting_address(start);
     cpu.load_into_address(program, 0x0000)?;
     cpu.run();
 

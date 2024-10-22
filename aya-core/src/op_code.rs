@@ -80,6 +80,7 @@ op_codes! {
     JleLit          = 0x5a,
     JltReg          = 0x5b,
     JltLit          = 0x5c,
+    Jmp             = 0x5d,
 
     Halt            = 0xff,
 }

@@ -15,14 +15,13 @@ pub trait Addressable<const SIZE: usize> {
     fn write(&mut self, address: Word<SIZE>, byte: u8) -> Result<SIZE, ()>;
 
     fn read_word(&self, address: Word<SIZE>) -> Result<SIZE, u16> {
-        let first = self.read(address)? as u16;
-        let second = self.read(address.next()?)? as u16;
-        Ok(first | (second << 8))
+        let first = self.read(address)?;
+        let second = self.read(address.next()?)?;
+        Ok(u16::from_le_bytes([first, second]))
     }
 
     fn write_word(&mut self, address: Word<SIZE>, word: u16) -> Result<SIZE, ()> {
-        let lower = (word & 0xff) as u8;
-        let upper = ((word & 0xff00) >> 8) as u8;
+        let [lower, upper] = word.to_le_bytes();
         self.write(address, lower)?;
         self.write(address.next()?, upper)?;
         Ok(())

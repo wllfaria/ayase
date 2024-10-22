@@ -50,6 +50,7 @@ pub enum Instruction<const SIZE: usize> {
     JleReg(Word<SIZE>, Register),
     JltLit(Word<SIZE>, u16),
     JltReg(Word<SIZE>, Register),
+    Jmp(Word<SIZE>),
 
     PushLit(u16),
     PopReg(Register),

@@ -161,6 +161,7 @@ pub enum Instruction {
     JleReg(Statement, Statement),
     JltLit(Statement, Statement),
     JltReg(Statement, Statement),
+    Jmp(Statement),
     PshLit(Statement),
     PshReg(Statement),
     Pop(Statement),
@@ -212,6 +213,7 @@ impl Instruction {
             | Instruction::CallLit(lhs)
             | Instruction::Inc(lhs)
             | Instruction::Dec(lhs)
+            | Instruction::Jmp(lhs)
             | Instruction::Not(lhs) => lhs,
 
             Instruction::Ret | Instruction::Hlt => unreachable!(),
@@ -262,6 +264,7 @@ impl Instruction {
             | Instruction::Inc(_)
             | Instruction::Dec(_)
             | Instruction::Not(_)
+            | Instruction::Jmp(_)
             | Instruction::Ret
             | Instruction::Hlt => unreachable!(),
         }
@@ -316,6 +319,7 @@ impl Instruction {
             Instruction::JleReg(_, _) => OpCode::JleReg,
             Instruction::JltLit(_, _) => OpCode::JltLit,
             Instruction::JltReg(_, _) => OpCode::JltReg,
+            Instruction::Jmp(_) => OpCode::Jmp,
         }
     }
 
@@ -365,7 +369,7 @@ impl Instruction {
 
             Instruction::MovMemReg(_, _) => InstructionKind::MemReg,
             Instruction::MovRegPtrReg(_, _) => InstructionKind::RegPtrReg,
-            Instruction::PshLit(_) | Instruction::CallLit(_) => InstructionKind::SingleLit,
+            Instruction::PshLit(_) | Instruction::CallLit(_) | Instruction::Jmp(_) => InstructionKind::SingleLit,
             Instruction::Ret | Instruction::Hlt => InstructionKind::NoArgs,
         }
     }

@@ -370,6 +370,11 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 let jump_to = Word::try_from(jump_to)?;
                 Ok(Instruction::JltReg(jump_to, reg))
             }
+            OpCode::Jmp => {
+                let jump_to = self.next_instruction(InstructionSize::Word)?;
+                let jump_to = Word::try_from(jump_to)?;
+                Ok(Instruction::Jmp(jump_to))
+            }
         }
     }
 
@@ -573,6 +578,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                     self.registers.set(Register::IP, address.into());
                 }
             }
+            Instruction::Jmp(address) => self.registers.set(Register::IP, address.into()),
 
             Instruction::PushLit(val) => self.push_stack(val)?,
             Instruction::PopReg(reg) => {
