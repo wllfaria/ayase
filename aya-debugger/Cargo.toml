@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 aya-core.workspace = true
 aya-compiler.workspace = true
+aya-console.workspace = true
 iced = "0.13.1"
 
 [[bin]]

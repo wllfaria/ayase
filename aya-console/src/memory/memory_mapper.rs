@@ -1,12 +1,14 @@
 use std::collections::VecDeque;
 
-use super::{Addressable, Error, LinearMemory, OutputMemory, Result};
-use crate::word::Word;
+use aya_core::memory::{Addressable, Error, Result};
+use aya_core::word::Word;
+
+use super::{LinearMemory, OutputDevice};
 
 #[derive(Debug)]
 pub enum MappableDevice<const SIZE: usize> {
     LinearMem(LinearMemory<SIZE>),
-    Output(OutputMemory<SIZE>),
+    Output(OutputDevice<SIZE>),
 }
 
 impl<const SIZE: usize> Addressable<SIZE> for MappableDevice<SIZE> {
@@ -45,8 +47,8 @@ impl<const SIZE: usize> From<LinearMemory<SIZE>> for MappableDevice<SIZE> {
     }
 }
 
-impl<const SIZE: usize> From<OutputMemory<SIZE>> for MappableDevice<SIZE> {
-    fn from(memory: OutputMemory<SIZE>) -> Self {
+impl<const SIZE: usize> From<OutputDevice<SIZE>> for MappableDevice<SIZE> {
+    fn from(memory: OutputDevice<SIZE>) -> Self {
         MappableDevice::Output(memory)
     }
 }

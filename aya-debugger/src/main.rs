@@ -4,8 +4,8 @@ mod style;
 
 use std::fmt;
 
+use aya_console::memory::LinearMemory;
 use aya_core::cpu::Cpu;
-use aya_core::memory::LinearMemory;
 use aya_core::MEMORY_SIZE;
 use iced::widget::{row, text_editor};
 use iced::{Element, Font, Theme};

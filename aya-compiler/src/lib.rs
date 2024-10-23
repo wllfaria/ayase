@@ -294,7 +294,7 @@ fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> Vec
     let mut modules = vec![];
     let mut asts = vec![];
     let mut visited = HashSet::default();
-    let mut bytecode = vec![0, 0, 0];
+    let mut bytecode = vec![];
     let path = path.as_ref().to_path_buf();
 
     process_module(
@@ -316,7 +316,7 @@ fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> Vec
         compile_module(source, ast, idx, &mut modules, &mut bytecode);
     }
 
-    set_starting_jump(path, &modules, &mut bytecode);
+    //set_starting_jump(path, &modules, &mut bytecode);
 
     bytecode
 }

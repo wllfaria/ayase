@@ -1,5 +1,5 @@
-use super::{Addressable, Error, Result};
-use crate::word::Word;
+use aya_core::memory::{Addressable, Error, Result};
+use aya_core::word::Word;
 
 pub struct LinearMemory<const SIZE: usize> {
     inner: [u8; SIZE],
