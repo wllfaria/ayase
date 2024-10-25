@@ -15,7 +15,7 @@ pub enum Message {
     DelayChanged(String),
 }
 
-fn cpu_status<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn cpu_status(state: &State) -> Element<'_, Message> {
     column![
         text("Status").color(COLOR_TEXT).size(FONT_BIG),
         margin_y(SPACING_NORMAL),
@@ -30,7 +30,7 @@ fn cpu_status<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
     .into()
 }
 
-fn top_section<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn top_section(state: &State) -> Element<'_, Message> {
     column![
         cpu_status(state),
         margin_y(SPACING_NORMAL),
@@ -73,7 +73,7 @@ fn top_section<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
     .into()
 }
 
-fn register<'a, const SIZE: usize>(state: &State<SIZE>, name: &'a str, color: Option<Color>) -> Element<'a, Message> {
+fn register<'a>(state: &State, name: &'a str, color: Option<Color>) -> Element<'a, Message> {
     let name_color = color.unwrap_or(COLOR_TEXT_MUTED);
     let value_color = color.unwrap_or(COLOR_TEXT);
     let address = state.fetch_register(name);
@@ -94,7 +94,7 @@ fn register<'a, const SIZE: usize>(state: &State<SIZE>, name: &'a str, color: Op
     .into()
 }
 
-fn register_section<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn register_section(state: &State) -> Element<'_, Message> {
     column![
         text("Registers").color(COLOR_TEXT).size(FONT_BIG),
         margin_y(10),
@@ -128,7 +128,7 @@ fn register_section<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Messa
     .into()
 }
 
-pub fn view<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+pub fn view(state: &State) -> Element<'_, Message> {
     container(column![
         top_section(state),
         margin_y(SPACING_BIG),
@@ -143,7 +143,7 @@ pub fn view<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
     .into()
 }
 
-pub fn update<const SIZE: usize>(state: &mut State<SIZE>, message: Message) {
+pub fn update(state: &mut State, message: Message) {
     match message {
         Message::Step => _ = state.cpu.step(),
         Message::DelayChanged(new_delay) => match new_delay.parse::<usize>() {

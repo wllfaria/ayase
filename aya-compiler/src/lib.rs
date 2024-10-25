@@ -3,8 +3,8 @@ mod file;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 
-use aya_core::op_code::OpCode;
-use aya_core::register::Register;
+use aya_cpu::op_code::OpCode;
+use aya_cpu::register::Register;
 use aya_parser::{Ast, InstructionKind, Statement};
 
 fn find_module(haystack: &[Module<'_>], needle: &PathBuf) -> usize {

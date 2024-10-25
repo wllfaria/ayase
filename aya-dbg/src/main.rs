@@ -4,9 +4,8 @@ mod style;
 
 use std::fmt;
 
-use aya_console::memory::LinearMemory;
-use aya_core::cpu::Cpu;
-use aya_core::MEMORY_SIZE;
+use aya_cpu::cpu::Cpu;
+use aya_game::memory::SpriteMemory;
 use iced::widget::{row, text_editor};
 use iced::{Element, Font, Theme};
 use style::FONT;
@@ -34,9 +33,9 @@ pub enum LoadFrom {
 }
 
 #[derive(Debug)]
-pub struct State<const SIZE: usize> {
+pub struct State {
     pub cpu_status: CpuStatus,
-    pub cpu: Cpu<SIZE, LinearMemory<SIZE>>,
+    pub cpu: Cpu<SpriteMemory>,
     pub instruction_delay: usize,
     pub load_from: LoadFrom,
     pub code_editor: text_editor::Content,
@@ -45,7 +44,7 @@ pub struct State<const SIZE: usize> {
     pub stack_mem: u16,
 }
 
-impl<const SIZE: usize> Default for State<SIZE> {
+impl Default for State {
     fn default() -> Self {
         Self {
             cpu_status: Default::default(),
@@ -55,12 +54,12 @@ impl<const SIZE: usize> Default for State<SIZE> {
             load_address: String::from("0000"),
             working_mem: 0,
             stack_mem: 256,
-            cpu: Cpu::new(LinearMemory::default()),
+            cpu: Cpu::new(SpriteMemory::default()),
         }
     }
 }
 
-impl<const SIZE: usize> State<SIZE> {
+impl State {
     pub fn fetch_register(&self, register: &str) -> u16 {
         self.cpu.registers.fetch(register.try_into().unwrap())
     }
@@ -73,7 +72,7 @@ enum Message {
 }
 
 fn main() {
-    iced::application("Aya debugger", update::<MEMORY_SIZE>, view)
+    iced::application("Aya debugger", update, view)
         .font(FONT.as_bytes())
         .default_font(Font::with_name(FONT))
         .window_size((1280., 720.))
@@ -83,7 +82,7 @@ fn main() {
         .unwrap()
 }
 
-fn view<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn view(state: &State) -> Element<'_, Message> {
     row![
         sidebar::view(state).map(Message::Sidebar),
         container::view(state).map(Message::Container)
@@ -91,13 +90,13 @@ fn view<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
     .into()
 }
 
-fn update<const SIZE: usize>(state: &mut State<SIZE>, message: Message) {
+fn update(state: &mut State, message: Message) {
     match message {
         Message::Container(message) => container::update(state, message),
         Message::Sidebar(message) => sidebar::update(state, message),
     }
 }
 
-fn theme<const SIZE: usize>(_: &State<SIZE>) -> Theme {
+fn theme(_: &State) -> Theme {
     Theme::KanagawaDragon
 }

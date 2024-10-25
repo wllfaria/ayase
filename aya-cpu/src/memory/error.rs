@@ -3,14 +3,14 @@ use std::fmt;
 use crate::word::Word;
 
 #[derive(Debug)]
-pub enum Error<const SIZE: usize> {
-    UnmappedAddress(Word<SIZE>),
+pub enum Error {
+    UnmappedAddress(Word),
     InvalidAddress(u16),
     StackOverflow,
     StackUnderflow,
 }
 
-impl<const MEM_SIZE: usize> fmt::Display for Error<MEM_SIZE> {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::UnmappedAddress(address) => write!(f, "address 0x{address:04X} is not mapped to any region"),
@@ -21,6 +21,6 @@ impl<const MEM_SIZE: usize> fmt::Display for Error<MEM_SIZE> {
     }
 }
 
-impl<const MEM_SIZE: usize> std::error::Error for Error<MEM_SIZE> {}
+impl std::error::Error for Error {}
 
-pub type Result<const MEM_SIZE: usize, T> = std::result::Result<T, Error<MEM_SIZE>>;
+pub type Result<T> = std::result::Result<T, Error>;

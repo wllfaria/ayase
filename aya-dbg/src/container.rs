@@ -1,4 +1,4 @@
-use aya_core::memory::Addressable;
+use aya_cpu::memory::Addressable;
 use iced::widget::{column, container, horizontal_space, row, text, text_editor, Column, Row};
 use iced::{border, Alignment, Border, Element, Length};
 
@@ -53,7 +53,7 @@ enum MemorySection {
     Working,
 }
 
-fn memory_rows<'a, const SIZE: usize>(state: &State<SIZE>, section: MemorySection) -> Element<'a, Message> {
+fn memory_rows<'a>(state: &State, section: MemorySection) -> Element<'a, Message> {
     let mut lines: Vec<Vec<Element<'a, Message>>> = vec![];
 
     let start = match section {
@@ -86,7 +86,7 @@ fn memory_rows<'a, const SIZE: usize>(state: &State<SIZE>, section: MemorySectio
     Column::from_vec(rows).into()
 }
 
-fn working_memory<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn working_memory(state: &State) -> Element<'_, Message> {
     column![
         text("Working memory").size(FONT_BIGGER),
         margin_y(SPACING_BIG),
@@ -128,7 +128,7 @@ fn working_memory<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message
     .into()
 }
 
-fn stack_memory<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn stack_memory(state: &State) -> Element<'_, Message> {
     let start = state.stack_mem * STACK_PAGE - 1;
     column![
         text("Stack memory").size(FONT_BIGGER),
@@ -171,7 +171,7 @@ fn stack_memory<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> 
     .into()
 }
 
-fn load_details<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn load_details(state: &State) -> Element<'_, Message> {
     row![
         horizontal_space(),
         column![
@@ -205,7 +205,7 @@ fn load_details<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> 
     .into()
 }
 
-fn code_editor<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn code_editor(state: &State) -> Element<'_, Message> {
     column![
         text("Insert assembly code below").color(COLOR_TEXT).size(FONT_BIG),
         margin_y(SPACING_NORMAL),
@@ -224,11 +224,11 @@ fn code_editor<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
     .into()
 }
 
-fn memory_inspector<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+fn memory_inspector(state: &State) -> Element<'_, Message> {
     row![working_memory(state), margin_x(SPACING_BIG), stack_memory(state)].into()
 }
 
-pub fn view<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
+pub fn view(state: &State) -> Element<'_, Message> {
     match state.load_from {
         LoadFrom::None => column![load_options(), memory_inspector(state)]
             .padding(SPACING_BIG)
@@ -239,10 +239,10 @@ pub fn view<const SIZE: usize>(state: &State<SIZE>) -> Element<'_, Message> {
     }
 }
 
-pub fn update<const SIZE: usize>(state: &mut State<SIZE>, message: Message) {
+pub fn update(state: &mut State, message: Message) {
     match message {
         Message::WorkingMemPrev => state.working_mem = state.working_mem.saturating_sub(1),
-        Message::WorkingMemNext => state.working_mem = u16::min(SIZE as u16 / 16, state.working_mem + 1),
+        Message::WorkingMemNext => state.working_mem = u16::min(u16::MAX / 16, state.working_mem + 1),
         Message::StackMemPrev => state.stack_mem = state.stack_mem.saturating_sub(1),
         Message::StackMemNext => state.stack_mem = u16::min(256, state.stack_mem + 1),
         Message::LoadFromCode => state.load_from = LoadFrom::Code,

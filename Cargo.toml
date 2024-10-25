@@ -1,15 +1,16 @@
 [workspace]
 members = [
-    "aya-core",
+    "aya-cpu",
+    "aya-dbg",
+    "aya-game",
     "aya-parser",
     "aya-compiler",
-    "aya-console"
 ]
-default-members = ["aya-console"]
+default-members = ["aya-game", "aya-dbg"]
 resolver = "2"
 
 [workspace.dependencies]
-aya-core = { path = "./aya-core" }
-aya-parser = { path = "./aya-parser" }
-aya-compiler = { path = "./aya-compiler" }
-aya-console = { path = "./aya-console" }
+aya-cpu = { path = "aya-cpu" }
+aya-game = { path = "aya-game" }
+aya-parser = { path = "aya-parser" }
+aya-compiler = { path = "aya-compiler" }

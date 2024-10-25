@@ -1,12 +1,12 @@
 [package]
-name = "aya-debugger"
+name = "aya-dbg"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aya-core.workspace = true
+aya-game.workspace = true
 aya-compiler.workspace = true
-aya-console.workspace = true
+aya-cpu.workspace = true
 iced = "0.13.1"
 
 [[bin]]

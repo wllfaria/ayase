@@ -214,7 +214,7 @@ mod tests {
             import "./path.aya" module_name &[$fefe] {
                 variable_a: $C0D3,
                 variable_b: [!other_variable],
-                varaible_c: &[$FEFE],
+                variable_c: &[$FEFE],
                 variable_d: [other_module.variable],
                 variable_e: !other_variable,
             }

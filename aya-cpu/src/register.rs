@@ -178,11 +178,11 @@ impl TryFrom<&str> for Register {
 }
 
 #[derive(Debug)]
-pub struct Registers<const WORD_SIZE: usize> {
+pub struct Registers {
     inner: [u16; Register::len()],
 }
 
-impl<const WORD_SIZE: usize> Registers<WORD_SIZE> {
+impl Registers {
     pub(crate) fn new() -> Self {
         let mut registers = Self {
             inner: [0; Register::len()],
@@ -192,11 +192,10 @@ impl<const WORD_SIZE: usize> Registers<WORD_SIZE> {
         registers
     }
 
-    pub fn fetch_word(&self, register: Register) -> Word<WORD_SIZE> {
+    pub fn fetch_word(&self, register: Register) -> Word {
         assert!(matches!(register, Register::IP | Register::SP | Register::FP));
         let word = self.inner[register as usize];
-        assert!((word as usize) < WORD_SIZE);
-        word.try_into().unwrap()
+        word.into()
     }
 
     pub fn fetch(&self, register: Register) -> u16 {
@@ -215,7 +214,7 @@ impl<const WORD_SIZE: usize> Registers<WORD_SIZE> {
     }
 }
 
-impl<const WORD_SIZE: usize> Default for Registers<WORD_SIZE> {
+impl Default for Registers {
     fn default() -> Self {
         Self::new()
     }

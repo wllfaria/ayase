@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use aya_core::op_code::OpCode;
+use aya_cpu::op_code::OpCode;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Operator {

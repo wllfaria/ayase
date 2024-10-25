@@ -1,9 +1,8 @@
-use std::fmt;
-
+use crate::error::Result;
 use crate::instruction::{Instruction, InstructionSize};
-use crate::memory::{self, Addressable};
-use crate::op_code::{self, OpCode};
-use crate::register::{self, Register, Registers};
+use crate::memory::Addressable;
+use crate::op_code::OpCode;
+use crate::register::{Register, Registers};
 use crate::word::Word;
 
 #[derive(Debug)]
@@ -13,47 +12,12 @@ pub enum ControlFlow {
 }
 
 #[derive(Debug)]
-pub enum Error<const MEM_SIZE: usize> {
-    Mem(memory::Error<MEM_SIZE>),
-    OpCode(op_code::Error),
-    Register(register::Error),
-}
-
-impl<const MEM_SIZE: usize> fmt::Display for Error<MEM_SIZE> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
-impl<const MEM_SIZE: usize> std::error::Error for Error<MEM_SIZE> {}
-
-impl<const MEM_SIZE: usize> From<memory::Error<MEM_SIZE>> for Error<MEM_SIZE> {
-    fn from(err: memory::Error<MEM_SIZE>) -> Self {
-        Self::Mem(err)
-    }
-}
-
-impl<const MEM_SIZE: usize> From<op_code::Error> for Error<MEM_SIZE> {
-    fn from(err: op_code::Error) -> Self {
-        Self::OpCode(err)
-    }
-}
-
-impl<const MEM_SIZE: usize> From<register::Error> for Error<MEM_SIZE> {
-    fn from(err: register::Error) -> Self {
-        Self::Register(err)
-    }
-}
-
-type Result<const MEM_SIZE: usize, T> = std::result::Result<T, Error<MEM_SIZE>>;
-
-#[derive(Debug)]
-pub struct Cpu<const SIZE: usize, A: Addressable<SIZE>> {
-    pub registers: Registers<SIZE>,
+pub struct Cpu<A: Addressable> {
+    pub registers: Registers,
     pub memory: A,
 }
 
-impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
+impl<A: Addressable> Cpu<A> {
     pub fn new(memory: A) -> Self {
         Self {
             registers: Registers::default(),
@@ -61,11 +25,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
-    pub fn load_into_address(
-        &mut self,
-        bytecode: impl AsRef<[u8]>,
-        address: impl TryInto<Word<SIZE>>,
-    ) -> Result<SIZE, ()> {
+    pub fn load_into_address(&mut self, bytecode: impl AsRef<[u8]>, address: impl TryInto<Word>) -> Result<()> {
         let mut address = match address.try_into() {
             Ok(addr) => addr,
             Err(_) => unreachable!(),
@@ -75,14 +35,6 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             address = address.next()?;
         }
         Ok(())
-    }
-
-    pub fn stack_address(&self) -> u16 {
-        self.registers.fetch(Register::SP)
-    }
-
-    pub fn starting_address(&mut self, address: u16) {
-        self.registers.set(Register::IP, address);
     }
 
     pub fn run(&mut self) {
@@ -95,12 +47,12 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
-    pub fn step(&mut self) -> Result<SIZE, ControlFlow> {
+    pub fn step(&mut self) -> Result<ControlFlow> {
         let instruction = self.fetch()?;
         self.execute(instruction)
     }
 
-    fn fetch(&mut self) -> Result<SIZE, Instruction<SIZE>> {
+    fn fetch(&mut self) -> Result<Instruction> {
         let op = self.next_instruction(InstructionSize::Small)?;
         let op = OpCode::try_from(op)?;
 
@@ -120,23 +72,20 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             }
             OpCode::MovRegMem => {
                 let address = self.next_instruction(InstructionSize::Word)?;
-                let address = Word::try_from(address)?;
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                Ok(Instruction::MovRegMem(reg, address))
+                Ok(Instruction::MovRegMem(reg, address.into()))
             }
             OpCode::MovLitMem => {
                 let address = self.next_instruction(InstructionSize::Word)?;
-                let address = Word::try_from(address)?;
                 let val = self.next_instruction(InstructionSize::Word)?;
-                Ok(Instruction::MovLitMem(address, val))
+                Ok(Instruction::MovLitMem(address.into(), val))
             }
             OpCode::MovMemReg => {
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
                 let address = self.next_instruction(InstructionSize::Word)?;
-                let address = Word::try_from(address)?;
-                Ok(Instruction::MovMemReg(address, reg))
+                Ok(Instruction::MovMemReg(address.into(), reg))
             }
             OpCode::MovRegPtrReg => {
                 let reg_from = self.next_instruction(InstructionSize::Small)?;
@@ -163,8 +112,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             }
             OpCode::Call => {
                 let word = self.next_instruction(InstructionSize::Word)?;
-                let word = Word::try_from(word)?;
-                Ok(Instruction::Call(word))
+                Ok(Instruction::Call(word.into()))
             }
             OpCode::Ret => Ok(Instruction::Ret),
             OpCode::Halt => {
@@ -295,90 +243,77 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             OpCode::JeqLit => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let literal = self.next_instruction(InstructionSize::Word)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JeqLit(jump_to, literal))
+                Ok(Instruction::JeqLit(jump_to.into(), literal))
             }
             OpCode::JeqReg => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JeqReg(jump_to, reg))
+                Ok(Instruction::JeqReg(jump_to.into(), reg))
             }
             OpCode::JgtLit => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let literal = self.next_instruction(InstructionSize::Word)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JgtLit(jump_to, literal))
+                Ok(Instruction::JgtLit(jump_to.into(), literal))
             }
             OpCode::JgtReg => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JgtReg(jump_to, reg))
+                Ok(Instruction::JgtReg(jump_to.into(), reg))
             }
             OpCode::JneLit => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let literal = self.next_instruction(InstructionSize::Word)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JneLit(jump_to, literal))
+                Ok(Instruction::JneLit(jump_to.into(), literal))
             }
             OpCode::JneReg => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JneReg(jump_to, reg))
+                Ok(Instruction::JneReg(jump_to.into(), reg))
             }
             OpCode::JgeLit => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let literal = self.next_instruction(InstructionSize::Word)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JgeLit(jump_to, literal))
+                Ok(Instruction::JgeLit(jump_to.into(), literal))
             }
             OpCode::JgeReg => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JgeReg(jump_to, reg))
+                Ok(Instruction::JgeReg(jump_to.into(), reg))
             }
             OpCode::JleLit => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let literal = self.next_instruction(InstructionSize::Word)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JleLit(jump_to, literal))
+                Ok(Instruction::JleLit(jump_to.into(), literal))
             }
             OpCode::JleReg => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JleReg(jump_to, reg))
+                Ok(Instruction::JleReg(jump_to.into(), reg))
             }
             OpCode::JltLit => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let literal = self.next_instruction(InstructionSize::Word)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JltLit(jump_to, literal))
+                Ok(Instruction::JltLit(jump_to.into(), literal))
             }
             OpCode::JltReg => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::JltReg(jump_to, reg))
+                Ok(Instruction::JltReg(jump_to.into(), reg))
             }
             OpCode::Jmp => {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
-                let jump_to = Word::try_from(jump_to)?;
-                Ok(Instruction::Jmp(jump_to))
+                Ok(Instruction::Jmp(jump_to.into()))
             }
         }
     }
 
-    fn execute(&mut self, instruction: Instruction<SIZE>) -> Result<SIZE, ControlFlow> {
+    fn execute(&mut self, instruction: Instruction) -> Result<ControlFlow> {
         match instruction {
             Instruction::MovLitReg(reg, val) => self.registers.set(reg, val),
             Instruction::MovRegReg(from, to) => {
@@ -398,8 +333,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             }
             Instruction::MovRegPtrReg(from, to) => {
                 let val = self.registers.fetch(from);
-                let val = Word::try_from(val)?;
-                let val = self.memory.read_word(val)?;
+                let val = self.memory.read_word(val.into())?;
                 self.registers.set(to, val);
             }
 
@@ -588,8 +522,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
             Instruction::Call(address) => self.call_address(address)?,
             Instruction::CallRegPtr(reg) => {
                 let address = self.registers.fetch(reg);
-                let address = Word::try_from(address)?;
-                self.call_address(address)?;
+                self.call_address(address.into())?;
             }
             Instruction::Ret => {
                 // when returning from a subroutine, we need to restore registers to same state as
@@ -615,7 +548,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
                 self.registers.set(Register::R2, r2);
                 self.registers.set(Register::R1, r1);
 
-                let prev_frame_ptr = frame_ptr + Word::try_from(frame_size)?;
+                let prev_frame_ptr = frame_ptr + frame_size.into();
                 self.registers.set(Register::FP, prev_frame_ptr.into());
             }
             Instruction::Halt(code) => return Ok(ControlFlow::Halt(code)),
@@ -623,7 +556,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         Ok(ControlFlow::Continue)
     }
 
-    fn next_instruction(&mut self, size: InstructionSize) -> Result<SIZE, u16> {
+    fn next_instruction(&mut self, size: InstructionSize) -> Result<u16> {
         match size {
             InstructionSize::Small => {
                 let reg_ptr = self.registers.fetch_word(Register::IP);
@@ -640,7 +573,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         }
     }
 
-    fn call_address(&mut self, address: Word<SIZE>) -> Result<SIZE, ()> {
+    fn call_address(&mut self, address: Word) -> Result<()> {
         // when calling a subroutine, we need to finish the current stack frame by:
         // 1. pushing the state of every non volatile general purpose register (R1 to R4)
         // 2. pushing the current address of the instruction pointer
@@ -669,7 +602,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         Ok(())
     }
 
-    fn pop_stack(&mut self) -> Result<SIZE, u16> {
+    fn pop_stack(&mut self) -> Result<u16> {
         let stack_ptr = self.registers.fetch_word(Register::SP);
         let next = stack_ptr.next_word()?;
         let val = self.memory.read_word(next)?;
@@ -677,7 +610,7 @@ impl<const SIZE: usize, A: Addressable<SIZE>> Cpu<SIZE, A> {
         Ok(val)
     }
 
-    fn push_stack(&mut self, val: u16) -> Result<SIZE, ()> {
+    fn push_stack(&mut self, val: u16) -> Result<()> {
         let stack_ptr = self.registers.fetch_word(Register::SP);
         self.memory.write_word(stack_ptr, val)?;
         self.registers.set(Register::SP, stack_ptr.prev_word()?.into());
