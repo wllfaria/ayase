@@ -1,0 +1,14 @@
+---
+source: aya-assembly/src/parser/instructions/call.rs
+expression: result
+---
+Instruction(
+    CallLit(
+        Address(
+            ByteOffset {
+                start: 6,
+                end: 10,
+            },
+        ),
+    ),
+)

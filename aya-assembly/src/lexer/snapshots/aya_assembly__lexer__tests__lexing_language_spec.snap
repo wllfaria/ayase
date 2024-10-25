@@ -1,0 +1,1658 @@
+---
+source: aya-assembly/src/lexer/mod.rs
+expression: tokens
+---
+[
+    Token {
+        kind: Mov,
+        offset: ByteOffset {
+            start: 21,
+            end: 24,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 25,
+            end: 27,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 27,
+            end: 28,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 38,
+            end: 42,
+        },
+    },
+    Token {
+        kind: Mov,
+        offset: ByteOffset {
+            start: 109,
+            end: 112,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 113,
+            end: 115,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 115,
+            end: 116,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 125,
+            end: 127,
+        },
+    },
+    Token {
+        kind: Mov,
+        offset: ByteOffset {
+            start: 197,
+            end: 200,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 201,
+            end: 202,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 202,
+            end: 203,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 204,
+            end: 208,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 208,
+            end: 209,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 209,
+            end: 210,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 213,
+            end: 215,
+        },
+    },
+    Token {
+        kind: Mov,
+        offset: ByteOffset {
+            start: 285,
+            end: 288,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 289,
+            end: 291,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 291,
+            end: 292,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 301,
+            end: 302,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 302,
+            end: 303,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 304,
+            end: 308,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 308,
+            end: 309,
+        },
+    },
+    Token {
+        kind: Mov,
+        offset: ByteOffset {
+            start: 373,
+            end: 376,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 377,
+            end: 378,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 378,
+            end: 379,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 380,
+            end: 384,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 384,
+            end: 385,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 385,
+            end: 386,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 390,
+            end: 394,
+        },
+    },
+    Token {
+        kind: Mov,
+        offset: ByteOffset {
+            start: 461,
+            end: 464,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 465,
+            end: 467,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 467,
+            end: 468,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 477,
+            end: 478,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 478,
+            end: 479,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 479,
+            end: 481,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 481,
+            end: 482,
+        },
+    },
+    Token {
+        kind: Add,
+        offset: ByteOffset {
+            start: 573,
+            end: 576,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 577,
+            end: 579,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 579,
+            end: 580,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 589,
+            end: 591,
+        },
+    },
+    Token {
+        kind: Add,
+        offset: ByteOffset {
+            start: 661,
+            end: 664,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 665,
+            end: 667,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 667,
+            end: 668,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 678,
+            end: 682,
+        },
+    },
+    Token {
+        kind: Sub,
+        offset: ByteOffset {
+            start: 749,
+            end: 752,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 753,
+            end: 755,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 755,
+            end: 756,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 765,
+            end: 767,
+        },
+    },
+    Token {
+        kind: Sub,
+        offset: ByteOffset {
+            start: 837,
+            end: 840,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 841,
+            end: 843,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 843,
+            end: 844,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 854,
+            end: 858,
+        },
+    },
+    Token {
+        kind: Mul,
+        offset: ByteOffset {
+            start: 925,
+            end: 928,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 929,
+            end: 931,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 931,
+            end: 932,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 941,
+            end: 943,
+        },
+    },
+    Token {
+        kind: Mul,
+        offset: ByteOffset {
+            start: 1013,
+            end: 1016,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1017,
+            end: 1019,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1019,
+            end: 1020,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 1030,
+            end: 1034,
+        },
+    },
+    Token {
+        kind: Inc,
+        offset: ByteOffset {
+            start: 1101,
+            end: 1104,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1105,
+            end: 1107,
+        },
+    },
+    Token {
+        kind: Dec,
+        offset: ByteOffset {
+            start: 1186,
+            end: 1189,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1190,
+            end: 1192,
+        },
+    },
+    Token {
+        kind: Lsh,
+        offset: ByteOffset {
+            start: 1294,
+            end: 1297,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1298,
+            end: 1300,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1300,
+            end: 1301,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1310,
+            end: 1312,
+        },
+    },
+    Token {
+        kind: Lsh,
+        offset: ByteOffset {
+            start: 1382,
+            end: 1385,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1386,
+            end: 1388,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1388,
+            end: 1389,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 1399,
+            end: 1403,
+        },
+    },
+    Token {
+        kind: Rsh,
+        offset: ByteOffset {
+            start: 1470,
+            end: 1473,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1474,
+            end: 1476,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1476,
+            end: 1477,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1486,
+            end: 1488,
+        },
+    },
+    Token {
+        kind: Rsh,
+        offset: ByteOffset {
+            start: 1558,
+            end: 1561,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1562,
+            end: 1564,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1564,
+            end: 1565,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 1575,
+            end: 1579,
+        },
+    },
+    Token {
+        kind: And,
+        offset: ByteOffset {
+            start: 1646,
+            end: 1649,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1650,
+            end: 1652,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1652,
+            end: 1653,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1662,
+            end: 1664,
+        },
+    },
+    Token {
+        kind: And,
+        offset: ByteOffset {
+            start: 1734,
+            end: 1737,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1738,
+            end: 1740,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1740,
+            end: 1741,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 1751,
+            end: 1755,
+        },
+    },
+    Token {
+        kind: Or,
+        offset: ByteOffset {
+            start: 1822,
+            end: 1824,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1826,
+            end: 1828,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1828,
+            end: 1829,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1838,
+            end: 1840,
+        },
+    },
+    Token {
+        kind: Or,
+        offset: ByteOffset {
+            start: 1909,
+            end: 1911,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 1913,
+            end: 1915,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 1915,
+            end: 1916,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 1926,
+            end: 1930,
+        },
+    },
+    Token {
+        kind: Xor,
+        offset: ByteOffset {
+            start: 1996,
+            end: 1999,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2000,
+            end: 2002,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 2002,
+            end: 2003,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2012,
+            end: 2014,
+        },
+    },
+    Token {
+        kind: Xor,
+        offset: ByteOffset {
+            start: 2084,
+            end: 2087,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2088,
+            end: 2090,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 2090,
+            end: 2091,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2101,
+            end: 2105,
+        },
+    },
+    Token {
+        kind: Not,
+        offset: ByteOffset {
+            start: 2172,
+            end: 2175,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2176,
+            end: 2178,
+        },
+    },
+    Token {
+        kind: Psh,
+        offset: ByteOffset {
+            start: 2277,
+            end: 2280,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2281,
+            end: 2283,
+        },
+    },
+    Token {
+        kind: Psh,
+        offset: ByteOffset {
+            start: 2363,
+            end: 2366,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2368,
+            end: 2372,
+        },
+    },
+    Token {
+        kind: Pop,
+        offset: ByteOffset {
+            start: 2449,
+            end: 2452,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2453,
+            end: 2455,
+        },
+    },
+    Token {
+        kind: Call,
+        offset: ByteOffset {
+            start: 2531,
+            end: 2535,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 2536,
+            end: 2537,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 2537,
+            end: 2538,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2539,
+            end: 2543,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 2543,
+            end: 2544,
+        },
+    },
+    Token {
+        kind: Ret,
+        offset: ByteOffset {
+            start: 2614,
+            end: 2617,
+        },
+    },
+    Token {
+        kind: Jeq,
+        offset: ByteOffset {
+            start: 2717,
+            end: 2720,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 2721,
+            end: 2722,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 2722,
+            end: 2723,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2724,
+            end: 2728,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 2728,
+            end: 2729,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 2729,
+            end: 2730,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2733,
+            end: 2735,
+        },
+    },
+    Token {
+        kind: Jeq,
+        offset: ByteOffset {
+            start: 2802,
+            end: 2805,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 2806,
+            end: 2807,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 2807,
+            end: 2808,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2809,
+            end: 2813,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 2813,
+            end: 2814,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 2814,
+            end: 2815,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2819,
+            end: 2823,
+        },
+    },
+    Token {
+        kind: Jgt,
+        offset: ByteOffset {
+            start: 2887,
+            end: 2890,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 2891,
+            end: 2892,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 2892,
+            end: 2893,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2894,
+            end: 2898,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 2898,
+            end: 2899,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 2899,
+            end: 2900,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 2903,
+            end: 2905,
+        },
+    },
+    Token {
+        kind: Jgt,
+        offset: ByteOffset {
+            start: 2972,
+            end: 2975,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 2976,
+            end: 2977,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 2977,
+            end: 2978,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2979,
+            end: 2983,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 2983,
+            end: 2984,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 2984,
+            end: 2985,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 2989,
+            end: 2993,
+        },
+    },
+    Token {
+        kind: Jne,
+        offset: ByteOffset {
+            start: 3057,
+            end: 3060,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3061,
+            end: 3062,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3062,
+            end: 3063,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3064,
+            end: 3068,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3068,
+            end: 3069,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3069,
+            end: 3070,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3073,
+            end: 3075,
+        },
+    },
+    Token {
+        kind: Jne,
+        offset: ByteOffset {
+            start: 3142,
+            end: 3145,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3146,
+            end: 3147,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3147,
+            end: 3148,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3149,
+            end: 3153,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3153,
+            end: 3154,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3154,
+            end: 3155,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3159,
+            end: 3163,
+        },
+    },
+    Token {
+        kind: Jge,
+        offset: ByteOffset {
+            start: 3227,
+            end: 3230,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3231,
+            end: 3232,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3232,
+            end: 3233,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3234,
+            end: 3238,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3238,
+            end: 3239,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3239,
+            end: 3240,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3243,
+            end: 3245,
+        },
+    },
+    Token {
+        kind: Jge,
+        offset: ByteOffset {
+            start: 3312,
+            end: 3315,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3316,
+            end: 3317,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3317,
+            end: 3318,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3319,
+            end: 3323,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3323,
+            end: 3324,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3324,
+            end: 3325,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3329,
+            end: 3333,
+        },
+    },
+    Token {
+        kind: Jle,
+        offset: ByteOffset {
+            start: 3397,
+            end: 3400,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3401,
+            end: 3402,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3402,
+            end: 3403,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3404,
+            end: 3408,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3408,
+            end: 3409,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3409,
+            end: 3410,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3413,
+            end: 3415,
+        },
+    },
+    Token {
+        kind: Jle,
+        offset: ByteOffset {
+            start: 3482,
+            end: 3485,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3486,
+            end: 3487,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3487,
+            end: 3488,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3489,
+            end: 3493,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3493,
+            end: 3494,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3494,
+            end: 3495,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3499,
+            end: 3503,
+        },
+    },
+    Token {
+        kind: Jlt,
+        offset: ByteOffset {
+            start: 3567,
+            end: 3570,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3571,
+            end: 3572,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3572,
+            end: 3573,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3574,
+            end: 3578,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3578,
+            end: 3579,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3579,
+            end: 3580,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3583,
+            end: 3585,
+        },
+    },
+    Token {
+        kind: Jlt,
+        offset: ByteOffset {
+            start: 3652,
+            end: 3655,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3656,
+            end: 3657,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3657,
+            end: 3658,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3659,
+            end: 3663,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3663,
+            end: 3664,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3664,
+            end: 3665,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3669,
+            end: 3673,
+        },
+    },
+    Token {
+        kind: Hlt,
+        offset: ByteOffset {
+            start: 3737,
+            end: 3740,
+        },
+    },
+    Token {
+        kind: Import,
+        offset: ByteOffset {
+            start: 3844,
+            end: 3850,
+        },
+    },
+    Token {
+        kind: String,
+        offset: ByteOffset {
+            start: 3852,
+            end: 3862,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3864,
+            end: 3874,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3875,
+            end: 3876,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3876,
+            end: 3877,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3877,
+            end: 3881,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3881,
+            end: 3882,
+        },
+    },
+    Token {
+        kind: LBrace,
+        offset: ByteOffset {
+            start: 3883,
+            end: 3884,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3889,
+            end: 3898,
+        },
+    },
+    Token {
+        kind: Colon,
+        offset: ByteOffset {
+            start: 3898,
+            end: 3899,
+        },
+    },
+    Token {
+        kind: Bang,
+        offset: ByteOffset {
+            start: 3900,
+            end: 3901,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3901,
+            end: 3904,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3904,
+            end: 3905,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3910,
+            end: 3919,
+        },
+    },
+    Token {
+        kind: Colon,
+        offset: ByteOffset {
+            start: 3919,
+            end: 3920,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3922,
+            end: 3926,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3926,
+            end: 3927,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3932,
+            end: 3941,
+        },
+    },
+    Token {
+        kind: Colon,
+        offset: ByteOffset {
+            start: 3941,
+            end: 3942,
+        },
+    },
+    Token {
+        kind: Ampersand,
+        offset: ByteOffset {
+            start: 3943,
+            end: 3944,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3944,
+            end: 3945,
+        },
+    },
+    Token {
+        kind: HexNumber,
+        offset: ByteOffset {
+            start: 3946,
+            end: 3950,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3950,
+            end: 3951,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3951,
+            end: 3952,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3957,
+            end: 3966,
+        },
+    },
+    Token {
+        kind: Colon,
+        offset: ByteOffset {
+            start: 3966,
+            end: 3967,
+        },
+    },
+    Token {
+        kind: LBracket,
+        offset: ByteOffset {
+            start: 3968,
+            end: 3969,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3969,
+            end: 3980,
+        },
+    },
+    Token {
+        kind: Dot,
+        offset: ByteOffset {
+            start: 3980,
+            end: 3981,
+        },
+    },
+    Token {
+        kind: Ident,
+        offset: ByteOffset {
+            start: 3981,
+            end: 3989,
+        },
+    },
+    Token {
+        kind: RBracket,
+        offset: ByteOffset {
+            start: 3989,
+            end: 3990,
+        },
+    },
+    Token {
+        kind: Comma,
+        offset: ByteOffset {
+            start: 3990,
+            end: 3991,
+        },
+    },
+    Token {
+        kind: RBrace,
+        offset: ByteOffset {
+            start: 3992,
+            end: 3993,
+        },
+    },
+]

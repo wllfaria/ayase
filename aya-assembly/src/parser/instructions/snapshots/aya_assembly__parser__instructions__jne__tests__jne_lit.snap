@@ -1,0 +1,20 @@
+---
+source: aya-assembly/src/parser/instructions/jne.rs
+expression: result
+---
+Instruction(
+    JneLit(
+        Address(
+            ByteOffset {
+                start: 7,
+                end: 11,
+            },
+        ),
+        HexLiteral(
+            ByteOffset {
+                start: 15,
+                end: 19,
+            },
+        ),
+    ),
+)

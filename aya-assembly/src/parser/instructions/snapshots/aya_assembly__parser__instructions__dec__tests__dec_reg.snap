@@ -1,0 +1,14 @@
+---
+source: aya-assembly/src/parser/instructions/dec.rs
+expression: result
+---
+Instruction(
+    Dec(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+    ),
+)

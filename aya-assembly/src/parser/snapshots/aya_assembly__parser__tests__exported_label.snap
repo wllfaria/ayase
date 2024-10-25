@@ -1,0 +1,15 @@
+---
+source: aya-assembly/src/parser/mod.rs
+expression: result
+---
+Ast {
+    statements: [
+        Label {
+            name: ByteOffset {
+                start: 1,
+                end: 5,
+            },
+            exported: true,
+        },
+    ],
+}

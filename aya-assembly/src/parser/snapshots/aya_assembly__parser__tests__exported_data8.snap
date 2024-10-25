@@ -1,0 +1,30 @@
+---
+source: aya-assembly/src/parser/mod.rs
+expression: result
+---
+Ast {
+    statements: [
+        Data {
+            name: ByteOffset {
+                start: 7,
+                end: 11,
+            },
+            size: 8,
+            exported: true,
+            values: [
+                Address(
+                    ByteOffset {
+                        start: 19,
+                        end: 23,
+                    },
+                ),
+                HexLiteral(
+                    ByteOffset {
+                        start: 27,
+                        end: 31,
+                    },
+                ),
+            ],
+        },
+    ],
+}

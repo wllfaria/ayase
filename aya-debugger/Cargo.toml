@@ -1,0 +1,14 @@
+[package]
+name = "aya-debugger"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aya-console.workspace = true
+aya-assembly.workspace = true
+aya-cpu.workspace = true
+iced = "0.13.1"
+
+[[bin]]
+name = "ayadbg"
+path = "./src/main.rs"

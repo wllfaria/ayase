@@ -1,9 +1,0 @@
-[package]
-name = "aya-compiler"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-aya-cpu.workspace = true
-aya-parser.workspace = true
-insta = "1.40.0"

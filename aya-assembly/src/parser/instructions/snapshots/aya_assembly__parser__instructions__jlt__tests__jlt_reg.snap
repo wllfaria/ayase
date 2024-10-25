@@ -1,0 +1,20 @@
+---
+source: aya-assembly/src/parser/instructions/jlt.rs
+expression: result
+---
+Instruction(
+    JltReg(
+        Address(
+            ByteOffset {
+                start: 7,
+                end: 11,
+            },
+        ),
+        Register(
+            ByteOffset {
+                start: 14,
+                end: 16,
+            },
+        ),
+    ),
+)

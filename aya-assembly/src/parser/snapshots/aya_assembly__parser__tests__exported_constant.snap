@@ -1,0 +1,21 @@
+---
+source: aya-assembly/src/parser/mod.rs
+expression: result
+---
+Ast {
+    statements: [
+        Const {
+            name: ByteOffset {
+                start: 7,
+                end: 11,
+            },
+            exported: true,
+            value: Address(
+                ByteOffset {
+                    start: 17,
+                    end: 21,
+                },
+            ),
+        },
+    ],
+}

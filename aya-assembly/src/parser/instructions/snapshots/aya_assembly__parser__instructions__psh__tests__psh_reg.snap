@@ -1,0 +1,14 @@
+---
+source: aya-assembly/src/parser/instructions/psh.rs
+expression: result
+---
+Instruction(
+    PshReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+    ),
+)

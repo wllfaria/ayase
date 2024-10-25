@@ -1,0 +1,20 @@
+---
+source: aya-assembly/src/parser/instructions/lsh.rs
+expression: result
+---
+Instruction(
+    LshRegReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+        Register(
+            ByteOffset {
+                start: 8,
+                end: 10,
+            },
+        ),
+    ),
+)
