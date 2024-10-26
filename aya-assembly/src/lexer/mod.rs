@@ -79,6 +79,27 @@ impl<'lex> Lexer<'lex> {
         Token::new(Kind::HexNumber, start..start + end_of_number)
     }
 
+    fn lex_string(&mut self) -> miette::Result<Token> {
+        self.advance(1);
+        let start = self.pos;
+        let end_of_string = self.source.find(['"', '\n']).unwrap_or(self.source.len());
+
+        self.advance(end_of_string);
+        let next = self.source.chars().nth(0);
+        match next {
+            Some('\n') | None => Err(self.bail(
+                "did you forget a closing \"",
+                "unterminated string",
+                start,
+                end_of_string + 1,
+            )),
+            _ => {
+                self.advance(1);
+                Ok(Token::new(Kind::String, start..start + end_of_string))
+            }
+        }
+    }
+
     fn bail(&self, help: &str, message: &str, start: usize, size: usize) -> miette::Error {
         miette::Error::from(
             miette::MietteDiagnostic::new(message)
@@ -176,26 +197,7 @@ impl<'lex> Iterator for Lexer<'lex> {
                     self.advance(1);
                     Some(Ok(Token::new(Kind::Dot, self.pos - 1..self.pos)))
                 }
-                '"' => {
-                    self.advance(1);
-                    let start = self.pos;
-                    let end_of_string = self.source.find(['"', '\n']).unwrap_or(self.source.len());
-
-                    self.advance(end_of_string);
-                    let next = self.source.chars().nth(0);
-                    match next {
-                        Some('\n') | None => Some(Err(self.bail(
-                            "did you forget a closing \"",
-                            "unterminated string",
-                            start,
-                            end_of_string + 1,
-                        ))),
-                        _ => {
-                            self.advance(1);
-                            Some(Ok(Token::new(Kind::String, start..start + end_of_string)))
-                        }
-                    }
-                }
+                '"' => Some(self.lex_string()),
                 'a'..='z' | 'A'..='Z' | '_' => Some(Ok(self.lex_identifier())),
                 _ => Some(Ok(Token::new(Kind::Eof, self.pos..self.pos + 1))),
             };

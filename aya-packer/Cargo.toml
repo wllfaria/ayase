@@ -1,0 +1,12 @@
+[package]
+name = "aya-packer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aya-bitmap.workspace = true
+aya-assembly.workspace = true
+
+clap = { version = "4.5.20", features = ["derive"] }
+miette = { version = "7.2.0", features = ["fancy"] }
+insta = "1.40.0"
