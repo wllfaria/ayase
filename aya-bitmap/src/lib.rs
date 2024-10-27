@@ -3,7 +3,7 @@ mod consts;
 pub mod decoder;
 mod error;
 
-use color::Color;
+pub use color::Color;
 pub use decoder::decode;
 use error::{Error, Result};
 
@@ -11,8 +11,8 @@ use error::{Error, Result};
 pub struct Bitmap {
     header: BitmapHeader,
     info_header: BitmapInfoHeader,
-    palette: Vec<Color>,
-    data: Vec<Color>,
+    pub palette: Vec<Color>,
+    pub data: Vec<Color>,
 }
 
 #[derive(Debug)]

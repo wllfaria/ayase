@@ -1,7 +1,13 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ByteOffset {
     start: usize,
     end: usize,
+}
+
+impl ByteOffset {
+    pub fn size(&self) -> usize {
+        self.end - self.start
+    }
 }
 
 impl From<std::ops::Range<usize>> for ByteOffset {
@@ -59,6 +65,22 @@ impl std::fmt::Display for Kind {
             Kind::Comma => write!(f, "COMMA"),
             Kind::LeftBracket => write!(f, "LEFT_BRACKET"),
             Kind::RightBracket => write!(f, "RIGHT_BRACKET"),
+        }
+    }
+}
+
+pub trait TransposeRef<'a, T, E> {
+    fn transpose(self) -> std::result::Result<Option<&'a T>, &'a E>;
+}
+
+impl<'lex> TransposeRef<'lex, Token, miette::Error> for Option<&'lex miette::Result<Token>> {
+    fn transpose(self) -> std::result::Result<Option<&'lex Token>, &'lex miette::Error> {
+        match self {
+            Some(result) => match result {
+                Ok(token) => Ok(Some(token)),
+                Err(e) => Err(e),
+            },
+            None => Ok(None),
         }
     }
 }
@@ -150,7 +172,7 @@ impl<'lex> Lexer<'lex> {
                 "[SYNTAX_ERROR]: unexpected token",
                 &format!("expected {kind}, found {}", token.kind),
                 token.offset.start,
-                token.offset.start + token.offset.end,
+                token.offset.size(),
             ));
         };
 
@@ -197,7 +219,7 @@ impl<'lex> Iterator for Lexer<'lex> {
                     &format!("unexpected token {curr}"),
                     "[SYNTAX_ERROR]: unexpected token",
                     self.pos,
-                    self.pos + 1,
+                    curr.len_utf8(),
                 ))),
             };
         }

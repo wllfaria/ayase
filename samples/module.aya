@@ -1,0 +1,2 @@
++const SOMETHING = $1234
++const NOTHING = $abcd

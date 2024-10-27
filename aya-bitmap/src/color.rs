@@ -49,3 +49,9 @@ impl From<(u8, u8, u8)> for Color {
         Self { r, g, b }
     }
 }
+
+impl From<&(u8, u8, u8)> for Color {
+    fn from((r, g, b): &(u8, u8, u8)) -> Self {
+        Self { r: *r, g: *g, b: *b }
+    }
+}

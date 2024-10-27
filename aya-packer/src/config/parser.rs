@@ -1,4 +1,4 @@
-use crate::config::lexer::{Kind, Lexer};
+use crate::config::lexer::{ByteOffset, Kind, Lexer, TransposeRef};
 use crate::config::Config;
 
 #[derive(Debug)]
@@ -9,8 +9,21 @@ pub struct Parser<'par> {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum Key {
-    Code(crate::config::lexer::ByteOffset),
-    Sprites(Vec<crate::config::lexer::ByteOffset>),
+    Code(ByteOffset),
+    Sprites(Vec<ByteOffset>),
+    Name(ByteOffset),
+    Output(ByteOffset),
+}
+
+impl std::fmt::Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Key::Code(_) => write!(f, "code"),
+            Key::Sprites(_) => write!(f, "sprites"),
+            Key::Name(_) => write!(f, "name"),
+            Key::Output(_) => write!(f, "output"),
+        }
+    }
 }
 
 impl<'par> Parser<'par> {
@@ -20,6 +33,7 @@ impl<'par> Parser<'par> {
 
     pub fn parse(&mut self) -> miette::Result<Config> {
         let mut keys = vec![];
+
         while self.lexer.peek().is_some() {
             keys.push(parse_key(self.source, self.lexer)?);
         }
@@ -30,7 +44,12 @@ impl<'par> Parser<'par> {
 
 fn parse_key<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miette::Result<Key> {
     let Some(token) = lexer.next().transpose()? else {
-        return Err(bail(source, "[SYNTAX_ERROR]: unexpected end of file (EOF)", "lol"));
+        return Err(bail(
+            source,
+            "[SYNTAX_ERROR]: unexpected end of file (EOF)",
+            "expected valid key for config",
+            source.len().saturating_sub(1)..source.len(),
+        ));
     };
 
     if token.kind != Kind::Ident {
@@ -38,19 +57,23 @@ fn parse_key<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miette::Result
             source,
             "[SYNTAX_ERROR]: unexpected token",
             &format!("expected IDENT, found {}", token.kind),
+            token.offset,
         ));
     };
 
     let ident = &source[std::ops::Range::<usize>::from(token.offset)];
 
     let key = match ident {
-        "code" => parse_code_key(lexer)?,
         "sprites" => parse_sprites_key(source, lexer)?,
+        "code" => parse_code_key(lexer)?,
+        "output" => parse_output_key(lexer)?,
+        "name" => parse_name_key(lexer)?,
         _ => {
             return Err(bail(
                 source,
                 "[SYNTAX_ERROR]: unexpected key",
-                &format!("the key {ident} is not a valid config key"),
+                &format!("the key '{ident}' is not a valid config key"),
+                token.offset,
             ))
         }
     };
@@ -64,6 +87,18 @@ fn parse_code_key(lexer: &mut Lexer<'_>) -> miette::Result<Key> {
     Ok(Key::Code(token.offset))
 }
 
+fn parse_name_key(lexer: &mut Lexer<'_>) -> miette::Result<Key> {
+    lexer.expect(Kind::Equal)?;
+    let token = lexer.expect(Kind::String)?;
+    Ok(Key::Name(token.offset))
+}
+
+fn parse_output_key(lexer: &mut Lexer<'_>) -> miette::Result<Key> {
+    lexer.expect(Kind::Equal)?;
+    let token = lexer.expect(Kind::String)?;
+    Ok(Key::Output(token.offset))
+}
+
 fn parse_sprites_key<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miette::Result<Key> {
     lexer.expect(Kind::Equal)?;
 
@@ -72,6 +107,7 @@ fn parse_sprites_key<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miette
             source,
             "[SYNTAX_ERROR]: unexpected end of file (EOF)",
             "expected value for sprite path",
+            source.len().saturating_sub(1)..source.len(),
         ));
     };
 
@@ -83,6 +119,7 @@ fn parse_sprites_key<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miette
                 source,
                 "[SYNTAX_ERROR]: unexpected token",
                 "expected value for sprite path",
+                token.offset,
             ))
         }
     };
@@ -94,39 +131,65 @@ fn parse_sprites_array<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miet
     let mut offsets = vec![];
 
     loop {
-        let Some(token) = lexer.next().transpose()? else {
-            return Err(bail(
-                source,
-                "[SYNTAX_ERROR]: unexpected end of file (EOF)",
-                "expected value for sprite path",
-            ));
+        let Ok(Some(token)) = lexer.peek().transpose() else {
+            let Err(err) = lexer.next().transpose() else {
+                return Err(bail(
+                    source,
+                    "[SYNTAX_ERROR]: unexpected end of file (EOF)",
+                    "expected value for sprite path",
+                    source.len().saturating_sub(1)..source.len(),
+                ));
+            };
+            return Err(err);
         };
 
         let offset = match token.kind {
             Kind::RightBracket => break,
-            Kind::String => token.offset,
+            Kind::String => parse_string(lexer)?,
             _ => {
                 return Err(bail(
                     source,
                     "[SYNTAX_ERROR]: unexpected token",
                     "sprite paths must be strings",
-                ))
+                    token.offset,
+                ));
             }
         };
+
+        let Ok(Some(next)) = lexer.peek().transpose() else {
+            let Err(err) = lexer.next().transpose() else {
+                return Err(bail(
+                    source,
+                    "[SYNTAX_ERROR]: unexpected end of file (EOF)",
+                    "expected value for sprite path",
+                    source.len().saturating_sub(1)..source.len(),
+                ));
+            };
+            return Err(err);
+        };
+
+        match next.kind {
+            Kind::RightBracket => {}
+            _ => _ = lexer.expect(Kind::Comma)?,
+        }
 
         offsets.push(offset)
     }
 
+    lexer.expect(Kind::RightBracket)?;
+
     Ok(Key::Sprites(offsets))
 }
 
-fn bail<S: AsRef<str>>(source: &str, message: S, help: S) -> miette::Error {
+fn parse_string(lexer: &mut Lexer) -> miette::Result<ByteOffset> {
+    let token = lexer.expect(Kind::String)?;
+    Ok(token.offset)
+}
+
+fn bail<S: AsRef<str>>(source: &str, message: S, help: S, span: impl Into<miette::SourceSpan>) -> miette::Error {
     miette::Error::from(
         miette::MietteDiagnostic::new(message.as_ref())
-            .with_labels(vec![miette::LabeledSpan::at(
-                source.len() - 1..source.len(),
-                "this bit",
-            )])
+            .with_labels(vec![miette::LabeledSpan::at(span, "this bit")])
             .with_help(help.as_ref()),
     )
     .with_source_code(source.to_string())
@@ -145,10 +208,14 @@ mod tests {
     #[test]
     fn test_simple_config() {
         let input = r#"
+            name = "hello"
             code = "main.aya"
+            output = "my_game.out"
             sprites = "assets/spritesheet.bmp"
         "#;
         let expected = Config {
+            name: String::from("hello"),
+            output: String::from("my_game.out"),
             code: String::from("main.aya"),
             sprites: vec![String::from("assets/spritesheet.bmp")],
         };
@@ -161,6 +228,8 @@ mod tests {
     fn test_sprite_array() {
         let input = r#"
             code = "main.aya"
+            name = "hello"
+            output = "my_game.out"
             sprites = [
                 "assets/01.bmp",
                 "assets/02.bmp",
@@ -168,7 +237,9 @@ mod tests {
             ]
         "#;
         let expected = Config {
+            name: String::from("hello"),
             code: String::from("main.aya"),
+            output: String::from("my_game.out"),
             sprites: vec![
                 String::from("assets/01.bmp"),
                 String::from("assets/02.bmp"),
@@ -179,5 +250,40 @@ mod tests {
         let config = make_sut(input);
 
         assert_eq!(config, expected);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_syntax_error() {
+        let input = r#"
+            code = "main.aya"
+            name = "hello"
+            output = "my_game.out"
+            sprites = [
+                "assets/01.bmp",
+                "assets/02.bmp"
+                "assets/03.bmp",
+            ]
+        "#;
+
+        make_sut(input);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_key() {
+        let input = r#"
+            code = "main.aya"
+            output = "my_game.out"
+            sprites = [
+                "assets/01.bmp",
+                "assets/02.bmp",
+                "assets/03.bmp",
+            ]
+            name = "my game"
+            invalid = "key"
+        "#;
+
+        make_sut(input);
     }
 }
