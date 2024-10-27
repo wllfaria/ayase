@@ -5,5 +5,7 @@ edition = "2021"
 
 [dependencies]
 aya-cpu.workspace = true
-insta = "1.40.0"
 miette = { version = "7.2.0", features = ["fancy"] }
+
+[dev-dependencies]
+insta = "1.40.0"

@@ -27,21 +27,21 @@ expression: tokens
     Token {
         offset: ByteOffset {
             start: 43,
-            end: 49,
+            end: 50,
         },
         kind: Ident,
     },
     Token {
         offset: ByteOffset {
-            start: 51,
-            end: 52,
+            start: 52,
+            end: 53,
         },
         kind: Equal,
     },
     Token {
         offset: ByteOffset {
-            start: 53,
-            end: 75,
+            start: 54,
+            end: 76,
         },
         kind: String,
     },

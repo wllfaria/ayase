@@ -1,6 +1,5 @@
 ---
-source: aya-packer/src/config/lexer.rs
-assertion_line: 234
+source: aya-packer/src/config/parser.rs
 expression: tokens
 ---
 [

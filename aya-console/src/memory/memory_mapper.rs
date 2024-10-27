@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use aya_cpu::memory::{Addressable, Error, Result};
 use aya_cpu::word::Word;
 
-use super::{ProgramMemory, SpriteMemory, StackMemory, VideoMemory};
+use super::{ProgramMemory, SpriteMemory, StackMemory, StdoutMemory, VideoMemory};
 
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
@@ -12,6 +12,7 @@ pub enum Devices {
     Video(VideoMemory),
     Sprite(SpriteMemory),
     Stack(StackMemory),
+    Stdout(StdoutMemory),
 }
 
 impl Addressable for Devices {
@@ -21,6 +22,7 @@ impl Addressable for Devices {
             Devices::Video(mem) => mem.write(address, byte),
             Devices::Sprite(mem) => mem.write(address, byte),
             Devices::Stack(mem) => mem.write(address, byte),
+            Devices::Stdout(mem) => mem.write(address, byte),
         }
     }
 
@@ -30,6 +32,7 @@ impl Addressable for Devices {
             Devices::Video(mem) => mem.read(address),
             Devices::Sprite(mem) => mem.read(address),
             Devices::Stack(mem) => mem.read(address),
+            Devices::Stdout(mem) => mem.read(address),
         }
     }
 
@@ -39,6 +42,7 @@ impl Addressable for Devices {
             Devices::Video(mem) => mem.write_word(address, word),
             Devices::Sprite(mem) => mem.write_word(address, word),
             Devices::Stack(mem) => mem.write_word(address, word),
+            Devices::Stdout(mem) => mem.write_word(address, word),
         }
     }
 
@@ -48,6 +52,7 @@ impl Addressable for Devices {
             Devices::Video(mem) => mem.read_word(address),
             Devices::Sprite(mem) => mem.read_word(address),
             Devices::Stack(mem) => mem.read_word(address),
+            Devices::Stdout(mem) => mem.read_word(address),
         }
     }
 }
@@ -73,6 +78,12 @@ impl From<ProgramMemory> for Devices {
 impl From<StackMemory> for Devices {
     fn from(mem: StackMemory) -> Self {
         Self::Stack(mem)
+    }
+}
+
+impl From<StdoutMemory> for Devices {
+    fn from(mem: StdoutMemory) -> Self {
+        Self::Stdout(mem)
     }
 }
 

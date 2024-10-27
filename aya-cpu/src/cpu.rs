@@ -25,6 +25,7 @@ impl<A: Addressable> Cpu<A> {
         }
     }
 
+    // TODO: remove this
     pub fn load_into_address(&mut self, bytecode: impl AsRef<[u8]>, address: impl TryInto<Word>) -> Result<()> {
         let mut address = match address.try_into() {
             Ok(addr) => addr,
