@@ -1,8 +1,6 @@
-+----------------------+
-|       AYA SPEC       |
-+----------------------+
+# AYA SPEC
 
-+------ REGISTERS -----+
+## Registers
 ACC - Accumulator Register
 Part of the calling convention, sub routines that return values should set this
 register as the value, or address to the value
@@ -26,16 +24,16 @@ FP
 Frame pointer, this register will always point to the base of the current stack
 frame
 
-+- CALLING CONVENTION -+
+## Calling Convention
 R1 - First argument to sub routine
 R2 - Second argument to sub routine
 R3 - Third argument to sub routine
 R4 - Fourth argument to sub routine
 Acc - Will store the return value
 
-+---- INSTRUCTIONS ----+
+## Instructions
 
-+---- MEMORY LAYOUT ---+
+## Memory Layout
 | START  | END    | DESCRIPTION                                                    |
 |--------|--------|----------------------------------------------------------------|
 | 0x0000 | 0x3FFF | 16KiB Memory dedicated to hold the programs source code        |
@@ -43,3 +41,27 @@ Acc - Will store the return value
 | 0x5000 | 0x6FFF | 8KiB memory dedicated to drawing to the screen, partitioned    |
 | TODO: Rest of the memory layout                                                  |
 | 0xE000 | 0xFFFF | 8KiB stack memory                                              |
+
+
+## Sprite Section
+Sprites are represented in memory as as a 32 byte sequence, where each byte
+stores 2 pixels. The VM has 2 palettes, and each palette has 8 colors, this
+allow us to specify any of the colors, and which palette with 4 bits. The format
+will use the 3 least significant bits as the color index, and the most 
+significant bit as which the palette to use.
+
+```
+     +- Left pixel
+     |
+     |         +- Right pixel
+     |         |
+  vvvvvvv   vvvvvvv
++---------+---------+
+| 1 0 1 1 | 0 1 0 1 |
++---------+---------+
+  ^ ^^^^^
+  |   |
+  |   +- Color index
+  |
+  +- Palette index
+```
