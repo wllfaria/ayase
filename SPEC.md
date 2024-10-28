@@ -34,23 +34,30 @@ Acc - Will store the return value
 ## Instructions
 
 ## Memory Layout
-| START  | END    | DESCRIPTION                                                    |
-|--------|--------|----------------------------------------------------------------|
-| 0x0000 | 0x3FFF | 16KiB Memory dedicated to hold the programs source code        |
-| 0x4000 | 0x4FFF | 4KiB Memory dedicated to hold sprites, see [sprites](#sprites) |
-| 0x5000 | 0x6FFF | 8KiB memory dedicated to drawing to the screen, partitioned    |
-| TODO: Rest of the memory layout                                                  |
-| 0xE000 | 0xFFFF | 8KiB stack memory                                              |
+| START  | END    | DESCRIPTION                                                |
+|--------|--------|------------------------------------------------------------|
+| 0x0000 | 0x1FFF |  8KiB Memory dedicated to hold [tiles](#tiles-section)     |
+| 0x2000 | 0x227F |  640B Memory dedicated to sprite drawing                   |
+| 0x2280 | 0x627F | 16KiB Memory dedicated to program source code              |
+| 0x6280 | 0x667F |  1KiB Memory for background tilemap drawing                |
+| 0x6680 | 0x6a7F |  1KiB Memory for interface tilemap drawing                 |
+| TODO: Rest of the memory layout                                              |
+| 0xE000 | 0xFFFF | 8KiB stack memory                                          |
+
+## Graphics
+
+### Tiles Section
+Graphics are rendered as tiles rather than managing individual pixels. Each tile
+is made of 8x8 squares, tiles does not encode any special information, they are
+only composed by index into palette colors for each of its pixels, ranging from
+0 to 15, meaning tiles are 4bpp (4 bits per pixel), which lets us encode 2 
+pixels into a byte, meaning each tile uses 32 total bytes, which allow you to 
+store 256 total tiles in the total 8KiB available for tiles, see 
+[memory layout](#memory-layout).
 
 
-## Sprite Section
-Sprites are represented in memory as as a 32 byte sequence, where each byte
-stores 2 pixels. The VM has 2 palettes, and each palette has 8 colors, this
-allow us to specify any of the colors, and which palette with 4 bits. The format
-will use the 3 least significant bits as the color index, and the most 
-significant bit as which the palette to use.
-
-```
+#### In-memory tile representation
+```txt
      +- Left pixel
      |
      |         +- Right pixel
@@ -59,9 +66,35 @@ significant bit as which the palette to use.
 +---------+---------+
 | 1 0 1 1 | 0 1 0 1 |
 +---------+---------+
-  ^ ^^^^^
-  |   |
-  |   +- Color index
-  |
-  +- Palette index
+  ^^^^^^^
+     |
+     +- Color index
 ```
+
+### Palette
+Aya has a single palette made up with 16 different colors, where 15 of those 
+are solid colors, and one is transparent. Transparent color is 0th index of the
+color palette.
+
+### Sprite Section
+Sprites are individual movable entities that are based on tiles, but allow for
+better control over how it is rendered. up to 40 sprites can be drawn to the 
+screen at any point. Each sprite is composed by a 16 byte structure that goes
+as follows:
+
+| BYTE    | DESCRIPTION                                                        |
+|---------|--------------------------------------------------------------------|
+|  00     | Sprite's X position onscreen                                       |
+|  01     | Sprite's Y position onscreen                                       |
+|  02     | Tile index                                                         |
+|  03     | Animation frame                                                    |
+|  04     | Sprite attribute flags, see [Sprite flags](#sprite-flags)          |
+|  05-15  | 11 bits to be used as the programmer desires                       |
+
+#### Sprite Flags
+Sprite flags is a bitmasked byte that defines how a sprite should be drawn, each
+bit has a special meaning that goes as follows:
+
+| Byte 0 | Byte 1 | Byte 2 - Byte 7 |
+|--------|--------|-----------------|
+| x flip | y flip | TODO            |
