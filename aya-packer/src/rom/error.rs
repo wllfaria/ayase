@@ -2,10 +2,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
-    NotFound(String),
-    NonUtf8(&'static str),
-    SyntaxError,
-    Miette(miette::Error),
+    UnknownColor(String),
+    SpriteTooBig(String),
 }
 
 impl std::fmt::Display for Error {
@@ -15,9 +13,3 @@ impl std::fmt::Display for Error {
 }
 
 impl std::error::Error for Error {}
-
-impl From<miette::Error> for Error {
-    fn from(err: miette::Error) -> Self {
-        Self::Miette(err)
-    }
-}

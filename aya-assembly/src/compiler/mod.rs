@@ -144,7 +144,7 @@ fn process_module(
     }
     visited.insert(path.clone());
 
-    let ast = crate::parser::parse(&code).unwrap();
+    let ast = crate::parser::parse(&code).expect("failed to parse");
 
     let mut module = Module {
         _name: name.to_string(),

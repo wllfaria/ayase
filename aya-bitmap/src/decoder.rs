@@ -5,7 +5,7 @@ use super::consts::{HEADER_SIZE, INFO_HEADER_SIZE};
 use super::error::{Error, Result};
 use super::{BitDepth, Bitmap, BitmapHeader, BitmapInfoHeader};
 
-pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<Bitmap> {
+pub fn from_reader<R: std::io::Read>(reader: &mut R, file_name: String) -> Result<Bitmap> {
     let mut buffer = vec![];
     reader.read_to_end(&mut buffer)?;
 
@@ -39,12 +39,13 @@ pub fn from_reader<R: std::io::Read>(reader: &mut R) -> Result<Bitmap> {
         info_header,
         palette,
         data,
+        file_name,
     })
 }
 
 pub fn decode<P: AsRef<Path>>(path: P) -> Result<Bitmap> {
-    let mut file = std::fs::OpenOptions::new().read(true).open(path)?;
-    from_reader(&mut file)
+    let mut file = std::fs::OpenOptions::new().read(true).open(&path)?;
+    from_reader(&mut file, path.as_ref().to_string_lossy().to_string())
 }
 
 fn decode_info_header(buffer: &[u8]) -> Result<BitmapInfoHeader> {

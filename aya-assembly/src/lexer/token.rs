@@ -40,6 +40,7 @@ impl std::fmt::Display for Token {
             Kind::Inc => write!(f, "INC"),
             Kind::Dec => write!(f, "DEC"),
             Kind::Not => write!(f, "NOT"),
+            Kind::Jmp => write!(f, "JMP"),
             Kind::Jeq => write!(f, "JEQ"),
             Kind::Jgt => write!(f, "JGT"),
             Kind::Jne => write!(f, "JNE"),
@@ -94,6 +95,7 @@ pub enum Kind {
     Inc,
     Dec,
     Not,
+    Jmp,
     Jeq,
     Jgt,
     Jne,
@@ -151,6 +153,7 @@ impl Kind {
             | Kind::Inc
             | Kind::Dec
             | Kind::Not
+            | Kind::Jmp
             | Kind::Jeq
             | Kind::Jgt
             | Kind::Jne
@@ -239,6 +242,10 @@ impl Token {
             "not" => Token {
                 offset: (start..end).into(),
                 kind: Kind::Not,
+            },
+            "jmp" => Token {
+                offset: (start..end).into(),
+                kind: Kind::Jmp,
             },
             "jeq" => Token {
                 offset: (start..end).into(),

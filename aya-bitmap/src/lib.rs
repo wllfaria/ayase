@@ -9,26 +9,55 @@ use error::{Error, Result};
 
 #[derive(Debug)]
 pub struct Bitmap {
+    file_name: String,
     header: BitmapHeader,
     info_header: BitmapInfoHeader,
-    pub palette: Vec<Color>,
-    pub data: Vec<Color>,
+    palette: Vec<Color>,
+    data: Vec<Color>,
+}
+
+impl Bitmap {
+    pub fn file_name(&self) -> &str {
+        &self.file_name
+    }
+
+    pub fn data(&self) -> &[Color] {
+        &self.data
+    }
+
+    pub fn header(&self) -> &BitmapHeader {
+        &self.header
+    }
+
+    pub fn info_header(&self) -> &BitmapInfoHeader {
+        &self.info_header
+    }
 }
 
 #[derive(Debug)]
-struct BitmapHeader {
+pub struct BitmapHeader {
     file_size: u32,
     data_offset: u32,
 }
 
 #[derive(Debug)]
-struct BitmapInfoHeader {
+pub struct BitmapInfoHeader {
     width: u32,
     height: u32,
     bit_depth: BitDepth,
     num_colors: u32,
     image_size: u32,
     important_colors: u32,
+}
+
+impl BitmapInfoHeader {
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
+    }
 }
 
 #[repr(u16)]

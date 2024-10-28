@@ -29,6 +29,7 @@ fn parse_instruction<S: AsRef<str>>(source: S, lexer: &mut Lexer, kind: Kind) ->
         Kind::Inc => parse_inc(source, lexer),
         Kind::Dec => parse_dec(source, lexer),
         Kind::Not => parse_not(source, lexer),
+        Kind::Jmp => parse_jmp(source, lexer),
         Kind::Jeq => parse_jeq(source, lexer),
         Kind::Jgt => parse_jgt(source, lexer),
         Kind::Jne => parse_jne(source, lexer),

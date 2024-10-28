@@ -1,11 +1,12 @@
 mod container;
+mod debug_memory;
 mod sidebar;
 mod style;
 
 use std::fmt;
 
-use aya_console::memory::SpriteMemory;
 use aya_cpu::cpu::Cpu;
+use debug_memory::DebugMemory;
 use iced::widget::{row, text_editor};
 use iced::{Element, Font, Theme};
 use style::FONT;
@@ -35,7 +36,7 @@ pub enum LoadFrom {
 #[derive(Debug)]
 pub struct State {
     pub cpu_status: CpuStatus,
-    pub cpu: Cpu<SpriteMemory>,
+    pub cpu: Cpu<DebugMemory>,
     pub instruction_delay: usize,
     pub load_from: LoadFrom,
     pub code_editor: text_editor::Content,
@@ -54,7 +55,7 @@ impl Default for State {
             load_address: String::from("0000"),
             working_mem: 0,
             stack_mem: 256,
-            cpu: Cpu::new(SpriteMemory::default()),
+            cpu: Cpu::new(DebugMemory::default()),
         }
     }
 }
