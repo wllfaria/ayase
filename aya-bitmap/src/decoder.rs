@@ -28,7 +28,7 @@ pub fn from_reader<R: std::io::Read>(reader: &mut R, file_name: String) -> Resul
     // TODO: implement the rest of formats
     let data = match info_header.bit_depth {
         BitDepth::MonoChrome => todo!(),
-        BitDepth::Bit4 => decode_4_bit_colors(header.data_offset, info_header.image_size, &palette, &buffer),
+        BitDepth::Bit4 => decode_4_bit_colors(header.data_offset, &info_header, &palette, &buffer),
         BitDepth::Bit8 => todo!(),
         BitDepth::Bit16 => todo!(),
         BitDepth::Bit24 => todo!(),
@@ -104,23 +104,31 @@ fn decode_palette(info_header: &BitmapInfoHeader, buffer: &[u8]) -> Result<Vec<C
     Ok(colors)
 }
 
-fn decode_4_bit_colors(data_offset: u32, size: u32, palette: &[Color], buffer: &[u8]) -> Vec<Color> {
-    let mut colors = vec![];
+fn decode_4_bit_colors(
+    data_offset: u32,
+    info_header: &BitmapInfoHeader,
+    palette: &[Color],
+    buffer: &[u8],
+) -> Vec<Color> {
+    let height = info_header.height;
+    let width = info_header.width;
+    let mut colors = vec![Color::new(0, 0, 0); (width * height) as usize];
 
-    for i in 0..size {
-        let idx = data_offset + i;
-        let byte = buffer[idx as usize];
+    let stride = ((width + 1) / 2 + 3) & !3;
 
-        let upper = byte >> 4;
-        let upper = palette[upper as usize];
+    for row in 0..height {
+        let src_row = height - 1 - row;
+        let row_start = data_offset + src_row * stride;
 
-        let lower = byte & 0b1111;
-        let lower = palette[lower as usize];
+        for col in 0..width {
+            let byte_idx = row_start + (col / 2);
+            let byte = buffer[byte_idx as usize];
 
-        colors.push(upper);
-        colors.push(lower);
+            let color_idx = if col % 2 == 0 { byte >> 4 } else { byte & 0b1111 };
+
+            colors[(row * width + col) as usize] = palette[color_idx as usize];
+        }
     }
 
-    colors.reverse();
     colors
 }

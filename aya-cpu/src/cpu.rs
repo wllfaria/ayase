@@ -15,13 +15,18 @@ pub enum ControlFlow {
 pub struct Cpu<A: Addressable> {
     pub registers: Registers,
     pub memory: A,
+    start_address: Word,
 }
 
 impl<A: Addressable> Cpu<A> {
-    pub fn new(memory: A) -> Self {
+    pub fn new<W>(memory: A, start_address: W, stack_address: W) -> Self
+    where
+        W: Into<Word> + Copy,
+    {
         Self {
-            registers: Registers::default(),
+            registers: Registers::new(start_address, stack_address),
             memory,
+            start_address: start_address.into(),
         }
     }
 
@@ -93,7 +98,6 @@ impl<A: Addressable> Cpu<A> {
                 let reg_to = self.next_instruction(InstructionSize::Small)?;
                 let reg_from = Register::try_from(reg_from)?;
                 let reg_to = Register::try_from(reg_to)?;
-                // this register should hold a address, so we have to follow the pointer
                 Ok(Instruction::MovRegPtrReg(reg_from, reg_to))
             }
             OpCode::PushLit => {
@@ -332,10 +336,11 @@ impl<A: Addressable> Cpu<A> {
                 let value = self.memory.read_word(address)?;
                 self.registers.set(reg, value)
             }
-            Instruction::MovRegPtrReg(from, to) => {
+            Instruction::MovRegPtrReg(address, from) => {
+                let address = self.registers.fetch(address);
                 let val = self.registers.fetch(from);
-                let val = self.memory.read_word(val.into())?;
-                self.registers.set(to, val);
+                println!("writing: {val:04X} to: {address:04X}");
+                self.memory.write_word(address, val)?;
             }
 
             Instruction::AddRegReg(r1, r2) => {
@@ -490,7 +495,8 @@ impl<A: Addressable> Cpu<A> {
             Instruction::JleLit(address, lit) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 if lit <= ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = u16::from(address) + u16::from(self.start_address);
+                    self.registers.set(Register::IP, address);
                 }
             }
             Instruction::JleReg(address, reg) => {
@@ -513,7 +519,10 @@ impl<A: Addressable> Cpu<A> {
                     self.registers.set(Register::IP, address.into());
                 }
             }
-            Instruction::Jmp(address) => self.registers.set(Register::IP, address.into()),
+            Instruction::Jmp(address) => {
+                let address = address + self.start_address;
+                self.registers.set(Register::IP, address.into())
+            }
 
             Instruction::PushLit(val) => self.push_stack(val)?,
             Instruction::PopReg(reg) => {

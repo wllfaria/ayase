@@ -15,12 +15,18 @@ impl Default for ProgramMemory {
 }
 
 impl Addressable for ProgramMemory {
-    fn read(&self, address: Word) -> Result<u8> {
-        Ok(self.memory[usize::from(address)])
+    fn read<W>(&self, address: W) -> Result<u8>
+    where
+        W: Into<Word> + Copy,
+    {
+        Ok(self.memory[usize::from(address.into())])
     }
 
-    fn write(&mut self, address: Word, byte: u8) -> Result<()> {
-        self.memory[usize::from(address)] = byte;
+    fn write<W>(&mut self, address: W, byte: u8) -> Result<()>
+    where
+        W: Into<Word> + Copy,
+    {
+        self.memory[usize::from(address.into())] = byte;
         Ok(())
     }
 }

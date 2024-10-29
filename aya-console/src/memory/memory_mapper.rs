@@ -3,88 +3,69 @@ use std::collections::VecDeque;
 use aya_cpu::memory::{Addressable, Error, Result};
 use aya_cpu::word::Word;
 
-use super::{ProgramMemory, SpriteMemory, StackMemory, StdoutMemory, VideoMemory};
+use super::{BackgroundMemory, InterfaceMemory, ProgramMemory, SpriteMemory, StackMemory, TileMemory};
 
-#[derive(Debug)]
-#[allow(clippy::large_enum_variant)]
-pub enum Devices {
-    Program(ProgramMemory),
-    Video(VideoMemory),
-    Sprite(SpriteMemory),
-    Stack(StackMemory),
-    Stdout(StdoutMemory),
-}
-
-impl Addressable for Devices {
-    fn write(&mut self, address: Word, byte: u8) -> Result<()> {
-        match self {
-            Devices::Program(mem) => mem.write(address, byte),
-            Devices::Video(mem) => mem.write(address, byte),
-            Devices::Sprite(mem) => mem.write(address, byte),
-            Devices::Stack(mem) => mem.write(address, byte),
-            Devices::Stdout(mem) => mem.write(address, byte),
+macro_rules! devices {
+    ($($variant:ident => $type:ty),* $(,)?) => {
+        #[derive(Debug)]
+        #[allow(clippy::large_enum_variant)]
+        pub enum Devices {
+            $($variant($type),)*
         }
-    }
 
-    fn read(&self, address: Word) -> Result<u8> {
-        match self {
-            Devices::Program(mem) => mem.read(address),
-            Devices::Video(mem) => mem.read(address),
-            Devices::Sprite(mem) => mem.read(address),
-            Devices::Stack(mem) => mem.read(address),
-            Devices::Stdout(mem) => mem.read(address),
+        impl Addressable for Devices {
+            fn write<W>(&mut self, address: W, byte: u8) -> Result<()>
+            where
+                W: Into<Word> + Copy,
+            {
+                match self {
+                    $(Devices::$variant(mem) => mem.write(address, byte),)*
+                }
+            }
+
+            fn read<W>(&self, address: W) -> Result<u8>
+            where
+                W: Into<Word> + Copy,
+            {
+                match self {
+                    $(Devices::$variant(mem) => mem.read(address.into()),)*
+                }
+            }
+
+            fn write_word<W>(&mut self, address: W, word: u16) -> Result<()>
+            where
+                W: Into<Word> + Copy,
+            {
+                match self {
+                    $(Devices::$variant(mem) => mem.write_word(address, word),)*
+                }
+            }
+
+            fn read_word<W>(&self, address: W) -> Result<u16>
+            where
+                W: Into<Word> + Copy,
+            {
+                match self {
+                    $(Devices::$variant(mem) => mem.read_word(address),)*
+                }
+            }
         }
-    }
 
-    fn write_word(&mut self, address: Word, word: u16) -> Result<()> {
-        match self {
-            Devices::Program(mem) => mem.write_word(address, word),
-            Devices::Video(mem) => mem.write_word(address, word),
-            Devices::Sprite(mem) => mem.write_word(address, word),
-            Devices::Stack(mem) => mem.write_word(address, word),
-            Devices::Stdout(mem) => mem.write_word(address, word),
-        }
-    }
-
-    fn read_word(&self, address: Word) -> Result<u16> {
-        match self {
-            Devices::Program(mem) => mem.read_word(address),
-            Devices::Video(mem) => mem.read_word(address),
-            Devices::Sprite(mem) => mem.read_word(address),
-            Devices::Stack(mem) => mem.read_word(address),
-            Devices::Stdout(mem) => mem.read_word(address),
-        }
-    }
+        $(impl From<$type> for Devices {
+            fn from(mem: $type) -> Self {
+                Self::$variant(mem)
+            }
+        })*
+    };
 }
 
-impl From<SpriteMemory> for Devices {
-    fn from(mem: SpriteMemory) -> Self {
-        Self::Sprite(mem)
-    }
-}
-
-impl From<VideoMemory> for Devices {
-    fn from(mem: VideoMemory) -> Self {
-        Self::Video(mem)
-    }
-}
-
-impl From<ProgramMemory> for Devices {
-    fn from(mem: ProgramMemory) -> Self {
-        Self::Program(mem)
-    }
-}
-
-impl From<StackMemory> for Devices {
-    fn from(mem: StackMemory) -> Self {
-        Self::Stack(mem)
-    }
-}
-
-impl From<StdoutMemory> for Devices {
-    fn from(mem: StdoutMemory) -> Self {
-        Self::Stdout(mem)
-    }
+devices! {
+    Program => ProgramMemory,
+    Tile => TileMemory,
+    Stack => StackMemory,
+    Background => BackgroundMemory,
+    Sprite => SpriteMemory,
+    Interface => InterfaceMemory
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
@@ -93,12 +74,19 @@ pub enum MappingMode {
     Remap,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
+pub enum MemoryKind {
+    Readonly,
+    ReadWrite,
+}
+
 #[derive(Debug)]
 struct MappedRegion {
     device: Devices,
     start: Word,
     end: Word,
     mapping_mode: MappingMode,
+    memory_kind: MemoryKind,
 }
 
 #[derive(Debug, Default)]
@@ -107,7 +95,14 @@ pub struct MemoryMapper {
 }
 
 impl MemoryMapper {
-    pub fn map<W, D>(&mut self, device: D, start: W, end: W, mapping_mode: MappingMode) -> Result<()>
+    pub fn map<W, D>(
+        &mut self,
+        device: D,
+        start: W,
+        end: W,
+        mapping_mode: MappingMode,
+        memory_kind: MemoryKind,
+    ) -> Result<()>
     where
         W: Into<Word>,
         D: Into<Devices>,
@@ -117,6 +112,7 @@ impl MemoryMapper {
             start: start.into(),
             end: end.into(),
             mapping_mode,
+            memory_kind,
         });
         Ok(())
     }
@@ -135,7 +131,11 @@ impl MemoryMapper {
 }
 
 impl Addressable for MemoryMapper {
-    fn read(&self, address: Word) -> Result<u8> {
+    fn read<W>(&self, address: W) -> Result<u8>
+    where
+        W: Into<Word> + Copy,
+    {
+        let address = address.into();
         let Some(region) = self.find_region(address) else {
             return Err(Error::UnmappedAddress(address));
         };
@@ -146,10 +146,15 @@ impl Addressable for MemoryMapper {
         region.device.read(address)
     }
 
-    fn write(&mut self, address: Word, byte: u8) -> Result<()> {
+    fn write<W>(&mut self, address: W, byte: u8) -> Result<()>
+    where
+        W: Into<Word> + Copy,
+    {
+        let address = address.into();
         let Some(region) = self.find_region_mut(address) else {
             return Err(Error::UnmappedAddress(address));
         };
+
         let address = match region.mapping_mode {
             MappingMode::Remap => address - region.start,
             MappingMode::Direct => address,
@@ -157,25 +162,31 @@ impl Addressable for MemoryMapper {
         region.device.write(address, byte)
     }
 
-    fn read_word(&self, address: Word) -> Result<u16> {
-        let Some(region) = self.find_region(address) else {
-            return Err(Error::UnmappedAddress(address));
+    fn read_word<W>(&self, address: W) -> Result<u16>
+    where
+        W: Into<Word> + Copy,
+    {
+        let Some(region) = self.find_region(address.into()) else {
+            return Err(Error::UnmappedAddress(address.into()));
         };
         let address = match region.mapping_mode {
-            MappingMode::Remap => address - region.start,
-            MappingMode::Direct => address,
+            MappingMode::Remap => address.into() - region.start,
+            MappingMode::Direct => address.into(),
         };
         region.device.read_word(address)
     }
 
-    fn write_word(&mut self, address: Word, byte: u16) -> Result<()> {
-        let Some(region) = self.find_region_mut(address) else {
-            return Err(Error::UnmappedAddress(address));
+    fn write_word<W>(&mut self, address: W, word: u16) -> Result<()>
+    where
+        W: Into<Word> + Copy,
+    {
+        let Some(region) = self.find_region_mut(address.into()) else {
+            return Err(Error::UnmappedAddress(address.into()));
         };
         let address = match region.mapping_mode {
-            MappingMode::Remap => address - region.start,
-            MappingMode::Direct => address,
+            MappingMode::Remap => address.into() - region.start,
+            MappingMode::Direct => address.into(),
         };
-        region.device.write_word(address, byte)
+        region.device.write_word(address, word)
     }
 }

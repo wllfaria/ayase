@@ -1,59 +1,61 @@
 use aya_bitmap::{Bitmap, Color};
+use aya_console::memory::TILE_MEMORY;
+use aya_console::PALETTE;
 
 use super::error::{Error, Result};
-
-static PALETTES: &[(u8, u8, u8)] = &[
-    // PALETTE 1
-    (0x00, 0x00, 0x00),
-    (0xb3, 0x00, 0x00),
-    (0xff, 0x80, 0x00),
-    (0xff, 0xff, 0xaa),
-    (0x6c, 0xd9, 0x00),
-    (0x00, 0x80, 0x00),
-    (0x40, 0x40, 0x80),
-    (0x88, 0x88, 0x88),
-    // PALETTE 2
-    (0x00, 0x00, 0x00),
-    (0x6e, 0xb8, 0xa8),
-    (0x2a, 0x58, 0x4f),
-    (0x74, 0xa3, 0x3f),
-    (0xfc, 0xff, 0xc0),
-    (0xc6, 0x50, 0x5a),
-    (0x77, 0x44, 0x48),
-    (0xee, 0x9c, 0x5d),
-];
 
 pub fn compile_sprites(sprites: Vec<Bitmap>) -> Result<Vec<u8>> {
     let mut compiled = vec![];
 
     for sprite in sprites {
-        let mut iter = sprite.data().iter().enumerate();
+        let width = sprite.info_header().width();
+        let height = sprite.info_header().height();
+        let data = sprite.data();
 
-        while let Some((idx, color)) = iter.next() {
-            let Some(left_idx) = PALETTES.iter().position(|c| Color::from(c) == *color) else {
-                return Err(unknown_color(&sprite, color, idx));
-            };
+        if width % 8 != 0 || height % 8 != 0 {
+            panic!("invalid sprite size");
+        }
 
-            let left_palette = (left_idx / 8) as u8;
-            let left_idx = left_idx as u8 - 8 * left_palette;
-            let mut packed: u8 = (left_palette << 3 | left_idx) << 4;
+        let num_sprites_x = width / 8;
+        let num_sprites_y = height / 8;
 
-            let (idx, color) = iter.next().expect("sprites must have even number of pixels");
-            let Some(right_idx) = PALETTES.iter().position(|c| Color::from(c) == *color) else {
-                return Err(unknown_color(&sprite, color, idx));
-            };
+        for sprite_y in 0..num_sprites_y {
+            for sprite_x in 0..num_sprites_x {
+                for row in 0..8 {
+                    for col in (0..8).step_by(2) {
+                        let global_row = sprite_y * 8 + row;
+                        let global_col = sprite_x * 8 + col;
+                        let idx = (global_row * width + global_col) as usize;
 
-            let right_palette = (right_idx / 8) as u8;
-            let right_idx = right_idx as u8 - 8 * right_palette;
-            packed |= right_palette << 3 | right_idx;
+                        let left_color = data[idx];
+                        let right_color = data[idx + 1];
 
-            compiled.push(packed)
+                        let Some(left_idx) = PALETTE
+                            .iter()
+                            .position(|&(r, g, b, _)| Color::from((r, g, b)) == left_color)
+                        else {
+                            return Err(unknown_color(&sprite, &left_color, idx));
+                        };
+
+                        let Some(right_idx) = PALETTE
+                            .iter()
+                            .position(|&(r, g, b, _)| Color::from((r, g, b)) == right_color)
+                        else {
+                            return Err(unknown_color(&sprite, &right_color, idx + 1));
+                        };
+
+                        let packed: u8 = (left_idx as u8) << 4 | (right_idx as u8);
+                        compiled.push(packed);
+                    }
+                }
+            }
         }
     }
 
-    if compiled.len() > 1024 * 4 {
+    if compiled.len() > TILE_MEMORY {
         return Err(Error::SpriteTooBig(format!(
-            "sprites should take at most 4KiB, but the total size is {}",
+            "sprites should take at most {}KiB, but the total size is {}",
+            TILE_MEMORY >> 10,
             compiled.len()
         )));
     }

@@ -1,28 +1,20 @@
 use aya_cpu::memory::{Addressable, Result};
 use aya_cpu::word::Word;
 
-use super::SPRITE_MEMORY;
+use super::BG_MEMORY;
 
 #[derive(Debug)]
-pub struct SpriteMemory {
-    memory: [u8; SPRITE_MEMORY],
+pub struct BackgroundMemory {
+    memory: [u8; BG_MEMORY],
 }
 
-impl SpriteMemory {
-    pub fn new() -> Self {
-        Self {
-            memory: [0; SPRITE_MEMORY],
-        }
-    }
-}
-
-impl Default for SpriteMemory {
+impl Default for BackgroundMemory {
     fn default() -> Self {
-        Self::new()
+        Self { memory: [0; BG_MEMORY] }
     }
 }
 
-impl Addressable for SpriteMemory {
+impl Addressable for BackgroundMemory {
     fn read<W>(&self, address: W) -> Result<u8>
     where
         W: Into<Word> + Copy,

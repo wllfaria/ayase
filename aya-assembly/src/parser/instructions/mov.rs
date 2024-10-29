@@ -4,7 +4,7 @@ use crate::parser::common::{expect, parse_hex_lit, parse_keyword, parse_register
 use crate::parser::error::{
     unexpected_eof, unexpected_token, ADDRESS_HELP, ADDRESS_MSG, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG,
 };
-use crate::parser::syntax::parse_simple_address;
+use crate::parser::syntax::{parse_address_ident, parse_simple_address};
 use crate::parser::Result;
 
 pub fn parse_mov<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statement> {
@@ -12,7 +12,7 @@ pub fn parse_mov<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
 
     let Ok(Some(token)) = lexer.peek().transpose() else {
         let Err(err) = lexer.next().transpose() else {
-            return unexpected_eof(source.as_ref(), "unterminated import statement");
+            return unexpected_eof(source.as_ref(), "unterminated mov instruction");
         };
         return Err(err);
     };
@@ -20,7 +20,7 @@ pub fn parse_mov<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
 
     let lhs = match lhs_kind {
         Kind::Ident => Statement::Register(parse_register(source.as_ref(), lexer)?),
-        Kind::Ampersand => parse_simple_address(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?,
+        Kind::Ampersand => parse_address_ident(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?,
         _ => return unexpected_token(source.as_ref(), token),
     };
 
@@ -54,6 +54,7 @@ pub fn parse_mov<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
         (Kind::Ident, Kind::Bang) => Ok(Instruction::MovLitReg(lhs, rhs).into()),
         (Kind::Ident, Kind::HexNumber) => Ok(Instruction::MovLitReg(lhs, rhs).into()),
         (Kind::Ident, Kind::Ampersand) => Ok(Instruction::MovMemReg(lhs, rhs).into()),
+        (Kind::Ampersand, _) if matches!(lhs, Statement::Register(_)) => Ok(Instruction::MovRegPtrReg(lhs, rhs).into()),
         (Kind::Ampersand, Kind::Ident) => Ok(Instruction::MovRegMem(lhs, rhs).into()),
         (Kind::Ampersand, Kind::Bang) => Ok(Instruction::MovLitMem(lhs, rhs).into()),
         (Kind::Ampersand, Kind::HexNumber) => Ok(Instruction::MovLitMem(lhs, rhs).into()),

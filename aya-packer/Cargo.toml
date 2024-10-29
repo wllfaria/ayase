@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 aya-bitmap.workspace = true
 aya-assembly.workspace = true
+aya-console.workspace = true
 
 clap = { version = "4.5.20", features = ["derive"] }
 miette = { version = "7.2.0", features = ["fancy"] }

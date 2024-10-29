@@ -19,6 +19,12 @@ impl fmt::UpperHex for Word {
     }
 }
 
+impl fmt::LowerHex for Word {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
 impl Word {
     pub fn next(&self) -> Result<Word> {
         let Some(next) = self.0.checked_add(1) else { return Err(Error::StackOverflow) };

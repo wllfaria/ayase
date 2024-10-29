@@ -1,3 +1,14 @@
 start:
-  jmp &[$0000]
-  hlt
+  mov acc, $0000
+  mov r8, $6280
+  mov r7, $0607
+
+fill:
+  jle &[!loop], $0400
+  mov &[r8], r7
+  add r8, $0002
+  add acc, $0002
+  jmp &[!fill]
+
+loop:
+  jmp &[!loop]

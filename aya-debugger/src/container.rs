@@ -254,7 +254,7 @@ pub fn update(state: &mut State, message: Message) {
             }
         }
         Message::ConfirmLoad => {
-            let bytecode = aya_assembly::compile(state.code_editor.text());
+            let bytecode = aya_assembly::compile_inner(state.code_editor.text(), "a");
             let address = u16::from_str_radix(&state.load_address, 16).unwrap_or(0x0000);
             state.cpu.load_into_address(bytecode, address).unwrap();
             state.load_from = LoadFrom::None;

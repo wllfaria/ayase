@@ -290,7 +290,7 @@ fn compile_module<'comp>(
     }
 }
 
-fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> Vec<u8> {
+pub fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) -> Vec<u8> {
     let mut sources = HashMap::new();
     let mut modules = vec![];
     let mut asts = vec![];

@@ -114,10 +114,7 @@ impl TryFrom<u16> for Register {
             7 => Ok(Register::R6),
             8 => Ok(Register::R7),
             9 => Ok(Register::R8),
-            1 => Err(Error::ForbiddenRegister(format!(
-                "access to register {} is forbidden",
-                Register::IP
-            ))),
+            1 => Ok(Register::IP),
             11 => Err(Error::ForbiddenRegister(format!(
                 "access to register {} is forbidden",
                 Register::SP
@@ -183,12 +180,14 @@ pub struct Registers {
 }
 
 impl Registers {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(start_address: impl Into<Word>, stack_address: impl Into<Word>) -> Self {
         let mut registers = Self {
             inner: [0; Register::len()],
         };
-        registers.inner[Register::FP as usize] = 0xffff - 2;
-        registers.inner[Register::SP as usize] = 0xffff - 2;
+        let stack_address = stack_address.into();
+        registers.inner[Register::FP as usize] = u16::from(stack_address) - 2;
+        registers.inner[Register::SP as usize] = u16::from(stack_address) - 2;
+        registers.inner[Register::IP as usize] = start_address.into().into();
         registers
     }
 
@@ -211,11 +210,5 @@ impl Registers {
         for register in Register::iter() {
             println!("{: <3} @ 0x{:04X}", register, self.fetch(register));
         }
-    }
-}
-
-impl Default for Registers {
-    fn default() -> Self {
-        Self::new()
     }
 }

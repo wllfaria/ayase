@@ -2,18 +2,31 @@ use super::Result;
 use crate::word::Word;
 
 pub trait Addressable {
-    fn read(&self, address: Word) -> Result<u8>;
-    fn write(&mut self, address: Word, byte: u8) -> Result<()>;
+    fn read<W>(&self, address: W) -> Result<u8>
+    where
+        W: Into<Word> + Copy;
 
-    fn read_word(&self, address: Word) -> Result<u16> {
+    fn write<W>(&mut self, address: W, byte: u8) -> Result<()>
+    where
+        W: Into<Word> + Copy;
+
+    fn read_word<W>(&self, address: W) -> Result<u16>
+    where
+        W: Into<Word> + Copy,
+    {
         let first = self.read(address)?;
+        let address: Word = address.into();
         let second = self.read(address.next()?)?;
         Ok(u16::from_le_bytes([first, second]))
     }
 
-    fn write_word(&mut self, address: Word, word: u16) -> Result<()> {
+    fn write_word<W>(&mut self, address: W, word: u16) -> Result<()>
+    where
+        W: Into<Word> + Copy,
+    {
         let [lower, upper] = word.to_le_bytes();
         self.write(address, lower)?;
+        let address = address.into();
         self.write(address.next()?, upper)?;
         Ok(())
     }

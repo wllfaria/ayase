@@ -22,6 +22,33 @@ impl From<DataSize> for u8 {
     }
 }
 
+pub fn parse_address_ident<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {
+    expect(Kind::Ampersand, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+    expect(Kind::LBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+
+    let Ok(Some(token)) = lexer.peek().transpose() else {
+        let Err(err) = lexer.next().transpose() else {
+            return unexpected_eof(source.as_ref(), "unterminated import statement");
+        };
+        return Err(err);
+    };
+
+    let value = match token.kind {
+        Kind::HexNumber => Statement::Address(parse_hex_lit(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
+        Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
+        Kind::Ident => Statement::Register(parse_identifier(
+            source.as_ref(),
+            lexer,
+            help.as_ref(),
+            message.as_ref(),
+        )?),
+        _ => return unexpected_token(source.as_ref(), token),
+    };
+
+    expect(Kind::RBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+    Ok(value)
+}
+
 pub fn parse_simple_address<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {
     expect(Kind::Ampersand, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
     expect(Kind::LBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;

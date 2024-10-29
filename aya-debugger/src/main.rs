@@ -55,7 +55,7 @@ impl Default for State {
             load_address: String::from("0000"),
             working_mem: 0,
             stack_mem: 256,
-            cpu: Cpu::new(DebugMemory::default()),
+            cpu: Cpu::new(DebugMemory::default(), 0x0000, 0xFFFF),
         }
     }
 }

@@ -7,7 +7,7 @@ edition = "2021"
 aya-console.workspace = true
 aya-assembly.workspace = true
 aya-cpu.workspace = true
-iced = "0.13.1"
+iced = { version = "0.13.1", features = ["webgl"] }
 
 [[bin]]
 name = "ayadbg"
