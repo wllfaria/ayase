@@ -124,7 +124,7 @@ fn decode_4_bit_colors(
             let byte_idx = row_start + (col / 2);
             let byte = buffer[byte_idx as usize];
 
-            let color_idx = if col % 2 == 0 { byte >> 4 } else { byte & 0b1111 };
+            let color_idx = if col % 2 == 0 { byte >> 4 } else { byte & 0xf };
 
             colors[(row * width + col) as usize] = palette[color_idx as usize];
         }

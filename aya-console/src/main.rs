@@ -1,20 +1,14 @@
+mod renderer;
 mod rom_loader;
-
-use std::time::{Duration, Instant};
 
 use aya_console::memory::memory_mapper::{MappingMode, MemoryKind, MemoryMapper};
 use aya_console::memory::{
     BackgroundMemory, InterfaceMemory, ProgramMemory, SpriteMemory, StackMemory, TileMemory, BG_MEM_LOC, CODE_MEM_LOC,
     SPRITE_MEM_LOC, STACK_MEM_LOC, TILE_MEM_LOC, UI_MEM_LOC,
 };
-use aya_console::PALETTE;
 use aya_cpu::cpu::{ControlFlow, Cpu};
 use aya_cpu::memory::Addressable;
-use raylib::prelude::*;
-
-//const FREQUENCY: f64 = 4_200_000.0;
-//const CYCLES_PER_FRAME: u64 = (FREQUENCY / FPS) as u64;
-const FPS: f64 = 30.0;
+use renderer::{RaylibRenderer, Renderer};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rom_file = std::env::args().nth(1).unwrap();
@@ -25,61 +19,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cpu = Cpu::new(memory, 0x2280, 0xFFFF);
     cpu.load_into_address(rom_file.code, 0x2280).unwrap();
 
-    let mut frame_start = Instant::now();
-    let frame_duration = Duration::from_secs_f64(1.0 / FPS);
-
-    let scale = 3u16;
-
-    let (mut rl, thread) = raylib::init()
-        .undecorated()
-        .size(256 * scale as i32, 256 * scale as i32)
-        .title("Hello")
-        .resizable()
-        .build();
-
-    while !rl.window_should_close() {
+    let fps = 30.0;
+    let scale = 4;
+    let mut renderer = RaylibRenderer::new(fps, scale);
+    while !renderer.should_close() {
         if let ControlFlow::Halt(_) = cpu.step()? {
             return Ok(());
         };
 
-        if frame_start.elapsed() >= frame_duration {
-            let mut d = rl.begin_drawing(&thread);
-            d.clear_background(Color::BLACK);
-
-            for bg_idx in 0..32 * 32 {
-                let tile_idx = cpu.memory.read(BG_MEM_LOC.0 + bg_idx)?;
-                let tile_x = bg_idx % 32 * 8 * scale;
-                let tile_y = bg_idx / 32 * 8 * scale;
-                let start = TILE_MEM_LOC.0 + tile_idx as u16 * 32;
-
-                for byte_idx in 0..32 {
-                    let tile_byte = cpu.memory.read(start + byte_idx)?;
-                    let color_left = PALETTE[(tile_byte >> 4) as usize];
-                    let color_right = PALETTE[(tile_byte & 0xf) as usize];
-
-                    let left_x = tile_x + ((byte_idx % 4) * 2) * scale;
-                    let right_x = left_x + scale;
-                    let y = tile_y + byte_idx / 4 * scale;
-
-                    d.draw_rectangle(
-                        left_x as i32,
-                        y as i32,
-                        scale as i32,
-                        scale as i32,
-                        Color::from(color_left),
-                    );
-
-                    d.draw_rectangle(
-                        right_x as i32,
-                        y as i32,
-                        scale as i32,
-                        scale as i32,
-                        Color::from(color_right),
-                    );
-                }
-            }
-
-            frame_start = Instant::now();
+        if renderer.should_draw() {
+            renderer.draw_frame(&mut cpu.memory)?;
         }
     }
 

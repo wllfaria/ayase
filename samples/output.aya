@@ -2,6 +2,8 @@ start:
   mov acc, $0000
   mov r8, $6280
   mov r7, $0607
+  mov &[$6680], $0302
+  mov &[$6682], $0504
 
 fill:
   jle &[!loop], $0400

@@ -339,7 +339,6 @@ impl<A: Addressable> Cpu<A> {
             Instruction::MovRegPtrReg(address, from) => {
                 let address = self.registers.fetch(address);
                 let val = self.registers.fetch(from);
-                println!("writing: {val:04X} to: {address:04X}");
                 self.memory.write_word(address, val)?;
             }
 
