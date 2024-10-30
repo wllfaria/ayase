@@ -74,19 +74,12 @@ pub enum MappingMode {
     Remap,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
-pub enum MemoryKind {
-    Readonly,
-    ReadWrite,
-}
-
 #[derive(Debug)]
 struct MappedRegion {
     device: Devices,
     start: Word,
     end: Word,
     mapping_mode: MappingMode,
-    memory_kind: MemoryKind,
 }
 
 #[derive(Debug, Default)]
@@ -95,14 +88,7 @@ pub struct MemoryMapper {
 }
 
 impl MemoryMapper {
-    pub fn map<W, D>(
-        &mut self,
-        device: D,
-        start: W,
-        end: W,
-        mapping_mode: MappingMode,
-        memory_kind: MemoryKind,
-    ) -> Result<()>
+    pub fn map<W, D>(&mut self, device: D, start: W, end: W, mapping_mode: MappingMode) -> Result<()>
     where
         W: Into<Word>,
         D: Into<Devices>,
@@ -112,7 +98,6 @@ impl MemoryMapper {
             start: start.into(),
             end: end.into(),
             mapping_mode,
-            memory_kind,
         });
         Ok(())
     }

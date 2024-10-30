@@ -3,7 +3,6 @@ mod file;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 
-use aya_cpu::op_code::OpCode;
 use aya_cpu::register::Register;
 
 use crate::parser::ast::{Ast, InstructionKind, Statement};
@@ -247,7 +246,7 @@ fn compile_module<'comp>(
                 bytecode.push(lower);
                 bytecode.push(upper);
             }
-            InstructionKind::RegLit | InstructionKind::RegMem => {
+            InstructionKind::RegMem => {
                 let lhs = instruction.lhs();
                 let rhs = instruction.rhs();
                 let [lower, upper] = encode_literal_or_address(source, lhs, modules, module_idx);
@@ -317,30 +316,12 @@ pub fn compile_inner<P: AsRef<Path> + std::fmt::Debug>(code: String, path: P) ->
         compile_module(source, ast, idx, &mut modules, &mut bytecode);
     }
 
-    //set_starting_jump(path, &modules, &mut bytecode);
-
     bytecode
 }
 
 pub fn compile<P: AsRef<Path> + std::fmt::Debug>(path: P) -> Vec<u8> {
     let code = file::load_module_from_path(path.as_ref()).unwrap();
     compile_inner(code, path)
-}
-
-fn set_starting_jump(path: PathBuf, modules: &[Module], bytecode: &mut [u8]) {
-    let start = modules
-        .iter()
-        .find(|m| m.path == path)
-        .unwrap()
-        .symbols
-        .get("start")
-        .copied()
-        .unwrap_or_default();
-
-    let [lower, upper] = start.to_le_bytes();
-    bytecode[0] = OpCode::Jmp.into();
-    bytecode[1] = lower;
-    bytecode[2] = upper;
 }
 
 #[cfg(test)]

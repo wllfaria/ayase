@@ -94,7 +94,6 @@ impl From<Instruction> for Statement {
 #[derive(Debug, PartialEq, Eq)]
 pub enum InstructionKind {
     LitReg,
-    RegLit,
     RegReg,
     RegMem,
     MemReg,
@@ -109,7 +108,6 @@ impl InstructionKind {
     pub fn byte_size(&self) -> u8 {
         match self {
             InstructionKind::LitReg => 4,
-            InstructionKind::RegLit => 4,
             InstructionKind::RegReg => 3,
             InstructionKind::RegMem => 4,
             InstructionKind::MemReg => 4,

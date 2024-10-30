@@ -32,12 +32,26 @@ impl Bitmap {
     pub fn info_header(&self) -> &BitmapInfoHeader {
         &self.info_header
     }
+
+    pub fn palette(&self) -> &[Color] {
+        &self.palette
+    }
 }
 
 #[derive(Debug)]
 pub struct BitmapHeader {
     file_size: u32,
     data_offset: u32,
+}
+
+impl BitmapHeader {
+    pub fn file_size(&self) -> u32 {
+        self.file_size
+    }
+
+    pub fn data_offset(&self) -> u32 {
+        self.data_offset
+    }
 }
 
 #[derive(Debug)]
@@ -57,6 +71,14 @@ impl BitmapInfoHeader {
 
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    pub fn image_size(&self) -> u32 {
+        self.image_size
+    }
+
+    pub fn important_colors(&self) -> u32 {
+        self.important_colors
     }
 }
 
