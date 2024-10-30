@@ -29,19 +29,20 @@ fn resolve_variable(name: &str, modules: &mut [Module<'_>], module_idx: usize) -
 }
 
 fn encode_literal_or_address(source: &str, node: &Statement, modules: &mut [Module<'_>], module_idx: usize) -> [u8; 2] {
-    let hex = match node {
-        Statement::Var(name) => {
-            let name = &source[name.start..name.end];
-            resolve_variable(name, modules, module_idx)
-        }
-        Statement::HexLiteral(value) | Statement::Address(value) => {
-            let value = &source[value.start..value.end];
-            u16::from_str_radix(value, 16).expect("value out of bounds for a u16")
-        }
-        _ => unreachable!(),
-    };
-
-    hex.to_le_bytes()
+    //let hex = match node {
+    //    Statement::Var(name) => {
+    //        let name = &source[name.start..name.end];
+    //        resolve_variable(name, modules, module_idx)
+    //    }
+    //    Statement::HexLiteral(value) | Statement::Address(value) => {
+    //        let value = &source[value.start..value.end];
+    //        u16::from_str_radix(value, 16).expect("value out of bounds for a u16")
+    //    }
+    //    _ => unreachable!(),
+    //};
+    //
+    //hex.to_le_bytes()
+    todo!()
 }
 
 fn encode_register(source: &str, value: &Statement) -> u8 {

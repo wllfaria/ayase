@@ -1,3 +1,65 @@
+# AYA Assembly
+
+## Instruction Expansion
+Aya assembly bracketed expression blocks accept some level of complex
+instructions, allowing you to do math operations within the brackets, which
+makes coding more convenient, but they must follow some rules.
+
+1. If involving registers, only addition and subtraction can be performed.
+2. You are allowed to do arbitrary math if there are only values or variables
+
+Those instructions will be expanded, and no register will be changed, below are 
+some examples of how the expansion will look like:
+
+```asm
+; NOTE: LitReg Instruction
+mov r2, [r2 + r3]
+
+; NOTE: expansion of left hand side expression has nothing to be done.
+
+; expansion of right hand side expression
+psh fp
+mov fp, r2
+add fp, r3
+
+; performing original instruction
+; NOTE: since we had no left side expansion, we can just move and restore.
+mov r2, fp
+
+; restoring original values
+pop fp
+```
+
+```asm
+mov 
+```
+
+```asm
+; INFO: LitMem Instruction
+mov &[r1 + r3], [r2 + r3]
+
+; expansion of left hand side expression
+psh acc
+mov acc, r1
+add acc, r3
+
+; expansion of right hand side expression
+psh fp
+mov fp, r2
+add fp, r3
+
+; performing original instruction
+; NOTE: since here we have a memory address instruction, we don't need to move
+;       the value in order to ensure the correct register ends with the value
+mov &[acc], fp
+
+; restoring original values
+pop fp
+pop acc
+```
+
+## Sample Instructions Syntax
+
 ```asm
 ; Move instructions
 mov r1,         $3000       ; mov literal into register                     (MovLitReg)
@@ -51,7 +113,10 @@ jle &[$0000],   $0000       ; jumps if literal is lesser or equal to ret    (Jle
 jlt &[$0000],   r2          ; jumps if register is lesser than ret          (JltReg)
 jlt &[$0000],   $0000       ; jumps if literal is lesser than ret           (JltLit)
 hlt                         ; halts the virtual machine                     (Halt)
+```
 
+## Module Import Syntax
+```asm
 ; Module system syntax
 import "./path.aya" ModuleName &[abcd] {
     variable1: !var,

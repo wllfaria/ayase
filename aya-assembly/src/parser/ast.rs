@@ -2,11 +2,26 @@ use std::ops::Range;
 
 use aya_cpu::op_code::OpCode;
 
+use crate::lexer::{Kind, Token};
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Operator {
     Add,
     Sub,
     Mul,
+}
+
+impl TryFrom<Token> for Operator {
+    type Error = miette::Error;
+
+    fn try_from(token: Token) -> Result<Self, Self::Error> {
+        match token.kind {
+            Kind::Plus => Ok(Self::Add),
+            Kind::Minus => Ok(Self::Sub),
+            Kind::Star => Ok(Self::Mul),
+            _ => todo!(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
@@ -45,10 +60,9 @@ pub struct Ast {
 pub enum Statement {
     Instruction(Box<Instruction>),
     HexLiteral(ByteOffset),
-    Address(ByteOffset),
+    Address(Box<Statement>),
     Register(ByteOffset),
     Var(ByteOffset),
-    Operator(Operator),
     Label {
         name: ByteOffset,
         exported: bool,
@@ -60,7 +74,7 @@ pub enum Statement {
     Import {
         name: ByteOffset,
         path: ByteOffset,
-        address: ByteOffset,
+        address: Box<Statement>,
         variables: Vec<Statement>,
     },
     ImportVar {

@@ -34,7 +34,12 @@ pub fn parse_address_ident<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S,
     };
 
     let value = match token.kind {
-        Kind::HexNumber => Statement::Address(parse_hex_lit(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
+        Kind::HexNumber => Statement::Address(Box::new(Statement::HexLiteral(parse_hex_lit(
+            source.as_ref(),
+            lexer,
+            help.as_ref(),
+            message.as_ref(),
+        )?))),
         Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
         Kind::Ident => Statement::Register(parse_identifier(
             source.as_ref(),
@@ -61,7 +66,12 @@ pub fn parse_simple_address<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S
     };
 
     let value = match token.kind {
-        Kind::HexNumber => Statement::Address(parse_hex_lit(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
+        Kind::HexNumber => Statement::Address(Box::new(Statement::HexLiteral(parse_hex_lit(
+            source.as_ref(),
+            lexer,
+            help.as_ref(),
+            message.as_ref(),
+        )?))),
         Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
         _ => return unexpected_token(source.as_ref(), token),
     };

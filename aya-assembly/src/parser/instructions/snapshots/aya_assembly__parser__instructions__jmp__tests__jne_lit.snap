@@ -1,0 +1,14 @@
+---
+source: aya-assembly/src/parser/instructions/jmp.rs
+expression: result
+---
+Instruction(
+    Jmp(
+        Address(
+            ByteOffset {
+                start: 7,
+                end: 11,
+            },
+        ),
+    ),
+)

@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cpu = Cpu::new(memory, CODE_MEM_LOC.0, STACK_MEM_LOC.1);
     cpu.load_into_address(rom_file.code, CODE_MEM_LOC.0).unwrap();
 
-    let fps = 30.0;
+    let fps = 60.0;
     let scale = 8;
     let mut renderer = RaylibRenderer::new(fps, scale);
     while !renderer.should_close() {

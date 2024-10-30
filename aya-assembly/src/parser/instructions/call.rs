@@ -17,7 +17,12 @@ pub fn parse_call<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Stateme
     let kind = token.kind;
 
     let value = match kind {
-        Kind::HexNumber => Statement::Address(parse_hex_lit(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?),
+        Kind::HexNumber => Statement::Address(Box::new(Statement::HexLiteral(parse_hex_lit(
+            source.as_ref(),
+            lexer,
+            HEX_LIT_HELP,
+            HEX_LIT_MSG,
+        )?))),
         Kind::Ampersand => parse_simple_address(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?,
         Kind::Bang => Statement::Var(parse_variable(
             source.as_ref(),

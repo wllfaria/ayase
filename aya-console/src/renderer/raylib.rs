@@ -29,13 +29,11 @@ pub struct RaylibRenderer {
 impl RaylibRenderer {
     pub fn new(fps: f64, scale: u16) -> Self {
         let (handle, thread) = raylib::init()
-            .undecorated()
             .size(
                 TILES_WIDTH as i32 * SPRITE_WIDTH as i32 * scale as i32,
                 TILES_HEIGHT as i32 * SPRITE_WIDTH as i32 * scale as i32,
             )
             .title("AYA Console")
-            .vsync()
             .resizable()
             .build();
 

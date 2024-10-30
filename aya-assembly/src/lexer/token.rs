@@ -1,6 +1,6 @@
 use crate::parser::ast::ByteOffset;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Token {
     pub kind: Kind,
     offset: ByteOffset,
@@ -146,6 +146,56 @@ impl Kind {
             | Kind::Sub
             | Kind::Mul
             | Kind::Lsh
+            | Kind::Rsh
+            | Kind::And
+            | Kind::Or
+            | Kind::Xor
+            | Kind::Inc
+            | Kind::Dec
+            | Kind::Not
+            | Kind::Jmp
+            | Kind::Jeq
+            | Kind::Jgt
+            | Kind::Jne
+            | Kind::Jge
+            | Kind::Jle
+            | Kind::Jlt
+            | Kind::Psh
+            | Kind::Pop
+            | Kind::Call
+            | Kind::Ret
+            | Kind::Hlt => true,
+        }
+    }
+
+    pub fn is_operator(&self) -> bool {
+        match self {
+            Kind::Plus | Kind::Minus | Kind::Star => true,
+            Kind::Mov
+            | Kind::Add
+            | Kind::Sub
+            | Kind::Eof
+            | Kind::Mul
+            | Kind::Lsh
+            | Kind::Const
+            | Kind::Data8
+            | Kind::Data16
+            | Kind::Import
+            | Kind::Ident
+            | Kind::String
+            | Kind::HexNumber
+            | Kind::Bang
+            | Kind::LBracket
+            | Kind::RBracket
+            | Kind::Ampersand
+            | Kind::LParen
+            | Kind::RParen
+            | Kind::LBrace
+            | Kind::RBrace
+            | Kind::Colon
+            | Kind::Comma
+            | Kind::Equal
+            | Kind::Dot
             | Kind::Rsh
             | Kind::And
             | Kind::Or
