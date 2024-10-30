@@ -17,10 +17,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let memory = setup_memory(&rom_file);
     let mut cpu = Cpu::new(memory, CODE_MEM_LOC.0, STACK_MEM_LOC.1);
-    cpu.load_into_address(rom_file.code, 0x2280).unwrap();
+    cpu.load_into_address(rom_file.code, CODE_MEM_LOC.0).unwrap();
 
     let fps = 30.0;
-    let scale = 4;
+    let scale = 8;
     let mut renderer = RaylibRenderer::new(fps, scale);
     while !renderer.should_close() {
         if let ControlFlow::Halt(_) = cpu.step()? {

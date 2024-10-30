@@ -12,6 +12,11 @@ use raylib::{RaylibHandle, RaylibThread};
 use super::error::Result;
 use super::Renderer;
 
+const TILES_WIDTH: u16 = 12;
+const TILES_HEIGHT: u16 = 12;
+const BYTES_PER_TILE: u16 = 32;
+const SPRITE_WIDTH: u16 = 8;
+
 #[derive(Debug)]
 pub struct RaylibRenderer {
     scale: u16,
@@ -25,7 +30,10 @@ impl RaylibRenderer {
     pub fn new(fps: f64, scale: u16) -> Self {
         let (handle, thread) = raylib::init()
             .undecorated()
-            .size(256 * scale as i32, 256 * scale as i32)
+            .size(
+                TILES_WIDTH as i32 * SPRITE_WIDTH as i32 * scale as i32,
+                TILES_HEIGHT as i32 * SPRITE_WIDTH as i32 * scale as i32,
+            )
             .title("AYA Console")
             .vsync()
             .resizable()
@@ -85,8 +93,8 @@ fn draw_memory_section(
 ) -> Result<()> {
     for idx in 0..section_size {
         let tile_idx = memory.read(section_location + idx)?;
-        let tile_x = idx % 32 * 8 * scale;
-        let tile_y = idx / 32 * 8 * scale;
+        let tile_x = idx % TILES_WIDTH * SPRITE_WIDTH * scale;
+        let tile_y = idx / TILES_WIDTH * SPRITE_WIDTH * scale;
         let tile_address = TILE_MEM_LOC.0 + tile_idx as u16 * 32;
         render_tile(tile_x, tile_y, tile_address, memory, draw_handle, scale)?;
     }
@@ -101,7 +109,7 @@ fn render_tile(
     draw_handle: &mut RaylibDrawHandle,
     scale: u16,
 ) -> Result<()> {
-    for byte_idx in 0..32 {
+    for byte_idx in 0..BYTES_PER_TILE {
         let tile_byte = memory.read(tile_address + byte_idx)?;
 
         let color_left = PALETTE[(tile_byte >> 4) as usize];
