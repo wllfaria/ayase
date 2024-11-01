@@ -13,10 +13,12 @@ Ast {
             exported: false,
             values: [
                 Address(
-                    ByteOffset {
-                        start: 18,
-                        end: 22,
-                    },
+                    HexLiteral(
+                        ByteOffset {
+                            start: 18,
+                            end: 22,
+                        },
+                    ),
                 ),
                 HexLiteral(
                     ByteOffset {

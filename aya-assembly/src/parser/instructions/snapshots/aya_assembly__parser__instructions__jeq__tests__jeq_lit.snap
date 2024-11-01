@@ -5,10 +5,12 @@ expression: result
 Instruction(
     JeqLit(
         Address(
-            ByteOffset {
-                start: 7,
-                end: 11,
-            },
+            HexLiteral(
+                ByteOffset {
+                    start: 7,
+                    end: 11,
+                },
+            ),
         ),
         HexLiteral(
             ByteOffset {

@@ -1,0 +1,40 @@
+---
+source: aya-assembly/src/parser/instructions/mov.rs
+expression: result
+---
+Instruction(
+    MovLitMem(
+        Address(
+            BinaryOp {
+                lhs: Register(
+                    ByteOffset {
+                        start: 6,
+                        end: 8,
+                    },
+                ),
+                operator: Add,
+                rhs: Register(
+                    ByteOffset {
+                        start: 11,
+                        end: 13,
+                    },
+                ),
+            },
+        ),
+        BinaryOp {
+            lhs: Register(
+                ByteOffset {
+                    start: 17,
+                    end: 19,
+                },
+            ),
+            operator: Add,
+            rhs: Var(
+                ByteOffset {
+                    start: 23,
+                    end: 26,
+                },
+            ),
+        },
+    ),
+)

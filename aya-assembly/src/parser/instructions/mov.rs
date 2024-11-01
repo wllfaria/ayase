@@ -1,10 +1,9 @@
 use crate::lexer::{Kind, Lexer, Token, TransposeRef};
-use crate::parser::ast::{ByteOffset, Instruction, Operator, Statement};
+use crate::parser::ast::{Instruction, Operator, Statement};
 use crate::parser::common::{expect, parse_hex_lit, parse_keyword, parse_register, parse_variable};
 use crate::parser::error::{
     unexpected_eof, unexpected_token, ADDRESS_HELP, ADDRESS_MSG, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG,
 };
-use crate::parser::syntax::{parse_address_ident, parse_simple_address};
 use crate::parser::Result;
 
 pub fn peek<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Token> {
@@ -37,11 +36,13 @@ pub fn parse_mov<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
     )?;
 
     let rhs_token = peek(source.as_ref(), lexer)?;
+
     let rhs = match rhs_token.kind {
         Kind::Ident => Statement::Register(parse_register(source.as_ref(), lexer)?),
         Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, "", "")?),
         Kind::HexNumber => Statement::HexLiteral(parse_hex_lit(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?),
-        Kind::Ampersand => parse_simple_address(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?,
+        Kind::Ampersand => parse_address_expr(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?,
+        Kind::LBracket => parse_literal_expr(source.as_ref(), lexer, "", "")?,
         _ => return unexpected_token(source.as_ref(), &rhs_token),
     };
 
@@ -50,6 +51,8 @@ pub fn parse_mov<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
         (Kind::Ident, Kind::Bang) => Ok(Instruction::MovLitReg(lhs, rhs).into()),
         (Kind::Ident, Kind::HexNumber) => Ok(Instruction::MovLitReg(lhs, rhs).into()),
         (Kind::Ident, Kind::Ampersand) => Ok(Instruction::MovMemReg(lhs, rhs).into()),
+        (Kind::Ident, Kind::LBracket) => Ok(Instruction::MovLitReg(lhs, rhs).into()),
+        (Kind::Ampersand, Kind::LBracket) => Ok(Instruction::MovLitMem(lhs, rhs).into()),
         (Kind::Ampersand, _) if matches!(lhs, Statement::Register(_)) => Ok(Instruction::MovRegPtrReg(lhs, rhs).into()),
         (Kind::Ampersand, Kind::Ident) => Ok(Instruction::MovRegMem(lhs, rhs).into()),
         (Kind::Ampersand, Kind::Bang) => Ok(Instruction::MovLitMem(lhs, rhs).into()),
@@ -66,7 +69,6 @@ mod precedences {
     pub const BASE: u8 = 0;
     pub const ADD: u8 = 1;
     pub const MUL: u8 = 2;
-    pub const GROUP: u8 = 3;
 
     pub fn from_operator(operator: Operator) -> Result<u8> {
         match operator {
@@ -81,39 +83,63 @@ pub fn parse_address_expr<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, 
     expect(Kind::Ampersand, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
     expect(Kind::LBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
 
-    println!("asda");
-
     let value = parse_expr(source.as_ref(), lexer, precedences::BASE)?;
 
     expect(Kind::RBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
     Ok(Statement::Address(Box::new(value)))
 }
 
+pub fn parse_literal_expr<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {
+    expect(Kind::LBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+    let value = parse_expr(source.as_ref(), lexer, precedences::BASE)?;
+    expect(Kind::RBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+    Ok(value)
+}
+
 pub fn parse_expr<S: AsRef<str>>(source: S, lexer: &mut Lexer, precedence: u8) -> Result<Statement> {
-    let mut lhs = match peek(source.as_ref(), lexer)?.kind {
+    let token = peek(source.as_ref(), lexer)?;
+    let mut lhs = match token.kind {
         Kind::LParen => {
             lexer.next().transpose()?;
-            let value = parse_expr(source.as_ref(), lexer, precedences::GROUP)?;
-            expect(Kind::RParen, lexer, source.as_ref(), "a", "b")?;
+            let value = parse_expr(source.as_ref(), lexer, precedences::BASE)?;
+            expect(
+                Kind::RParen,
+                lexer,
+                source.as_ref(),
+                "you likely forgot a closing parenthesis `)` [RIGHT_PAREN]",
+                "[SYNTAX_ERROR]: unterminated expression group",
+            )?;
             value
         }
-        Kind::HexNumber => Statement::HexLiteral(parse_hex_lit(source.as_ref(), lexer, "a", "b")?),
-        _ => todo!(),
+        Kind::HexNumber => Statement::HexLiteral(parse_hex_lit(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?),
+        Kind::Ident => Statement::Register(parse_register(source.as_ref(), lexer)?),
+        Kind::Bang => Statement::Var(parse_variable(
+            source.as_ref(),
+            lexer,
+            "variable name must be a valid identifier",
+            "[SYNTAX_ERROR]: invalid variable name",
+        )?),
+        _ => unexpected_token(source.as_ref(), &token)?,
     };
 
     loop {
-        match peek(source.as_ref(), lexer)?.kind {
+        let token = peek(source.as_ref(), lexer)?;
+        match token.kind {
             Kind::RParen => break,
-            kind if !kind.is_operator() => todo!(),
+            Kind::RBracket => break,
+            kind if !kind.is_operator() => unexpected_token(source.as_ref(), &token)?,
             _ => {}
         }
 
-        let operator = Operator::try_from(lexer.next().transpose()?.unwrap())?;
+        let operator = peek(source.as_ref(), lexer)?;
+        let operator = Operator::try_from(operator)?;
         let operator_precedence = precedences::from_operator(operator)?;
 
         if operator_precedence < precedence {
             break;
         }
+
+        lexer.next().transpose()?;
 
         let rhs = parse_expr(source.as_ref(), lexer, operator_precedence)?;
         lhs = Statement::BinaryOp {
@@ -180,6 +206,48 @@ mod tests {
     #[test]
     fn test_mov_mem_reg_expr() {
         let input = "mov r1, &[r1 + r2]";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_mov_mem_reg_with_lit() {
+        let input = "mov r1, &[r1 + $0404]";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_mov_mem_reg_with_lit_groups() {
+        let input = "mov r1, &[r1 + ($0404 + $0404)]";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_mov_reg_mem_expr() {
+        let input = "mov &[r2 + r2 + r3], r7";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn asduiahsdui() {
+        let input = "mov r1, [$3 * $4 + r2 + r3 + $10 * $5]";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_mov_reg_lit_expr() {
+        let input = "mov &[r2 + r2 + r3], [r2 + r3]";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_mov_reg_lit_var_expr() {
+        let input = "mov &[r2 + r2], [r2 + !var]";
         let result = run_instruction(input);
         insta::assert_debug_snapshot!(result);
     }

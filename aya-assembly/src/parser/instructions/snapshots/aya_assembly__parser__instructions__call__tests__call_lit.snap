@@ -5,10 +5,12 @@ expression: result
 Instruction(
     CallLit(
         Address(
-            ByteOffset {
-                start: 6,
-                end: 10,
-            },
+            HexLiteral(
+                ByteOffset {
+                    start: 6,
+                    end: 10,
+                },
+            ),
         ),
     ),
 )

@@ -1,0 +1,66 @@
+---
+source: aya-assembly/src/parser/instructions/mov.rs
+assertion_line: 240
+expression: result
+---
+Instruction(
+    MovLitReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+        BinaryOp {
+            lhs: BinaryOp {
+                lhs: HexLiteral(
+                    ByteOffset {
+                        start: 10,
+                        end: 11,
+                    },
+                ),
+                operator: Mul,
+                rhs: HexLiteral(
+                    ByteOffset {
+                        start: 15,
+                        end: 16,
+                    },
+                ),
+            },
+            operator: Add,
+            rhs: BinaryOp {
+                lhs: Register(
+                    ByteOffset {
+                        start: 19,
+                        end: 21,
+                    },
+                ),
+                operator: Add,
+                rhs: BinaryOp {
+                    lhs: Register(
+                        ByteOffset {
+                            start: 24,
+                            end: 26,
+                        },
+                    ),
+                    operator: Add,
+                    rhs: BinaryOp {
+                        lhs: HexLiteral(
+                            ByteOffset {
+                                start: 30,
+                                end: 32,
+                            },
+                        ),
+                        operator: Mul,
+                        rhs: HexLiteral(
+                            ByteOffset {
+                                start: 36,
+                                end: 37,
+                            },
+                        ),
+                    },
+                },
+            },
+        },
+    ),
+)

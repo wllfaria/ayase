@@ -11,10 +11,12 @@ Instruction(
             },
         ),
         Address(
-            ByteOffset {
-                start: 11,
-                end: 15,
-            },
+            HexLiteral(
+                ByteOffset {
+                    start: 11,
+                    end: 15,
+                },
+            ),
         ),
     ),
 )
