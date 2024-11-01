@@ -24,7 +24,17 @@ impl TryFrom<Token> for Operator {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+impl std::fmt::Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operator::Add => write!(f, "add"),
+            Operator::Sub => write!(f, "sub"),
+            Operator::Mul => write!(f, "mul"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct ByteOffset {
     pub start: usize,
     pub end: usize,
@@ -54,6 +64,27 @@ impl From<Range<usize>> for ByteOffset {
 #[derive(Debug)]
 pub struct Ast {
     pub statements: Vec<Statement>,
+}
+
+impl Ast {
+    pub fn imports(&self) -> impl Iterator<Item = (&ByteOffset, &ByteOffset, &Vec<Statement>, &Statement)> {
+        self.statements.iter().flat_map(|stat| match stat {
+            Statement::Import {
+                name,
+                variables,
+                path,
+                address,
+            } => Some((name, path, variables, address.as_ref())),
+            _ => None,
+        })
+    }
+
+    pub fn constants(&self) -> impl Iterator<Item = (&ByteOffset, &Statement, &bool)> {
+        self.statements.iter().flat_map(|stat| match stat {
+            Statement::Const { name, value, exported } => Some((name, value.as_ref(), exported)),
+            _ => None,
+        })
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -97,6 +128,37 @@ pub enum Statement {
         operator: Operator,
         rhs: Box<Statement>,
     },
+}
+
+impl Statement {
+    pub fn offset(&self) -> ByteOffset {
+        match self {
+            Statement::Instruction(inst) => inst.offset(),
+            Statement::HexLiteral(offset) => *offset,
+            Statement::Address(stat) => stat.offset(),
+            Statement::Register(offset) => *offset,
+            Statement::Var(offset) => *offset,
+            Statement::Label { name, .. } => *name,
+            Statement::FieldAccessor { module, field } => (module.start..field.end).into(),
+            Statement::Import {
+                name,
+                address,
+                variables,
+                ..
+            } => {
+                let last = variables.last().map(|i| i.offset().end).unwrap_or(address.offset().end);
+                (name.start..last).into()
+            }
+            Statement::ImportVar { name, value } => (name.start..value.offset().end).into(),
+            Statement::Data { name, values, size, .. } => {
+                let offset = if *size == 8 { 6 } else { 7 };
+                let last = values.last().map(|i| i.offset().end).unwrap_or(name.end);
+                (name.start - offset..last).into()
+            }
+            Statement::Const { name, value, .. } => (name.start..value.offset().end).into(),
+            Statement::BinaryOp { lhs, rhs, .. } => (lhs.offset().start..rhs.offset().end).into(),
+        }
+    }
 }
 
 impl From<Instruction> for Statement {
@@ -178,8 +240,8 @@ pub enum Instruction {
     PshReg(Statement),
     Pop(Statement),
     CallLit(Statement),
-    Ret,
-    Hlt,
+    Ret(ByteOffset),
+    Hlt(ByteOffset),
 }
 
 impl Instruction {
@@ -228,7 +290,7 @@ impl Instruction {
             | Instruction::Jmp(lhs)
             | Instruction::Not(lhs) => lhs,
 
-            Instruction::Ret | Instruction::Hlt => unreachable!(),
+            Instruction::Ret(_) | Instruction::Hlt(_) => unreachable!(),
         }
     }
 
@@ -277,8 +339,8 @@ impl Instruction {
             | Instruction::Dec(_)
             | Instruction::Not(_)
             | Instruction::Jmp(_)
-            | Instruction::Ret
-            | Instruction::Hlt => unreachable!(),
+            | Instruction::Ret(_)
+            | Instruction::Hlt(_) => unreachable!(),
         }
     }
 
@@ -316,8 +378,8 @@ impl Instruction {
             Instruction::PshReg(_) => OpCode::PushReg,
             Instruction::Pop(_) => OpCode::Pop,
             Instruction::CallLit(_) => OpCode::Call,
-            Instruction::Ret => OpCode::Ret,
-            Instruction::Hlt => OpCode::Halt,
+            Instruction::Ret(_) => OpCode::Ret,
+            Instruction::Hlt(_) => OpCode::Halt,
 
             Instruction::JeqLit(_, _) => OpCode::JeqLit,
             Instruction::JeqReg(_, _) => OpCode::JeqReg,
@@ -382,7 +444,60 @@ impl Instruction {
             Instruction::MovMemReg(_, _) => InstructionKind::MemReg,
             Instruction::MovRegPtrReg(_, _) => InstructionKind::RegPtrReg,
             Instruction::PshLit(_) | Instruction::CallLit(_) | Instruction::Jmp(_) => InstructionKind::SingleLit,
-            Instruction::Ret | Instruction::Hlt => InstructionKind::NoArgs,
+            Instruction::Ret(_) | Instruction::Hlt(_) => InstructionKind::NoArgs,
+        }
+    }
+
+    pub fn offset(&self) -> ByteOffset {
+        const NORMAL: usize = 4;
+        const SMALL: usize = 3;
+        const BIG: usize = 5;
+
+        match self {
+            Instruction::MovLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MovRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MovRegMem(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MovMemReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MovLitMem(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MovRegPtrReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::AddRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::AddLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::SubRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::SubLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MulRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MulLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::LshRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::LshLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::RshRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::RshLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::AndRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::AndLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::OrLitReg(lhs, rhs) => (lhs.offset().start - SMALL..rhs.offset().end).into(),
+            Instruction::OrRegReg(lhs, rhs) => (lhs.offset().start - SMALL..rhs.offset().end).into(),
+            Instruction::XorLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::XorRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::Inc(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::Dec(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::Not(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::JeqLit(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JeqReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JgtLit(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JgtReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JneLit(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JneReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JgeLit(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JgeReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JleLit(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JleReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JltLit(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::JltReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::Jmp(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::PshLit(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::PshReg(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::Pop(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::CallLit(stat) => (stat.offset().start - BIG..stat.offset().end).into(),
+            Instruction::Ret(offset) => *offset,
+            Instruction::Hlt(offset) => *offset,
         }
     }
 }

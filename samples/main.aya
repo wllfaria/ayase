@@ -1,0 +1,9 @@
+import "../samples/secondary.aya" Secondary &[$1234] {
+  variable: !other,
+  variable_b: $3030,
+  variable_c: [Module.field]
+}
+
+import "../samples/module.aya" Module &[$1234] { }
+
+const other = $1234

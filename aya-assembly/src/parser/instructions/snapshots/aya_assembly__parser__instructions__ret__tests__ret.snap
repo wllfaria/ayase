@@ -3,5 +3,10 @@ source: aya-assembly/src/parser/instructions/ret.rs
 expression: result
 ---
 Instruction(
-    Ret,
+    Ret(
+        ByteOffset {
+            start: 0,
+            end: 3,
+        },
+    ),
 )

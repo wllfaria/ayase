@@ -1,0 +1,6 @@
++const field = $fefe
+
+lol:
+  mov acc, $0000
+  mov r8, $6280
+  mov r7, $0607

@@ -87,7 +87,6 @@ fn parse_import_var_value<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result
             "variable value must be a valid identifier",
             IDENT_MSG,
         )?)),
-        Kind::Ampersand => Ok(parse_simple_address(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?),
         Kind::HexNumber => Ok(Statement::HexLiteral(parse_hex_lit(
             source.as_ref(),
             lexer,

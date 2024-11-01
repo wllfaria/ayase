@@ -3,6 +3,7 @@ mod rom;
 
 use std::path::PathBuf;
 
+use aya_assembly::AssembleBehavior;
 use clap::Parser;
 use config::Config;
 
@@ -36,20 +37,20 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             .expect("unable to read config file. Please certify that a aya.cfg file exists in the current directory"),
     };
 
-    let code = PathBuf::from(&config.code);
-    let code = aya_assembly::compile(&code);
+    let path = PathBuf::from(&config.code);
+    let code = aya_assembly::assemble(&path, AssembleBehavior::Codegen)?;
 
-    let mut sprites = vec![];
-    let sprite_paths = config.sprites.iter().map(PathBuf::from).collect::<Vec<_>>();
-    for path in sprite_paths {
-        sprites.push(aya_bitmap::decode(path)?);
-    }
-
-    let sprites = rom::compile_sprites(sprites)?;
-    let header = rom::make_header(&config, code.len() as u16, sprites.len() as u16);
-    let rom = rom::compile(&header, &code, &sprites);
-
-    std::fs::write(config.output, rom).expect("failed to write rom into specified output");
+    //let mut sprites = vec![];
+    //let sprite_paths = config.sprites.iter().map(PathBuf::from).collect::<Vec<_>>();
+    //for path in sprite_paths {
+    //    sprites.push(aya_bitmap::decode(path)?);
+    //}
+    //
+    //let sprites = rom::compile_sprites(sprites)?;
+    //let header = rom::make_header(&config, code.len() as u16, sprites.len() as u16);
+    //let rom = rom::compile(&header, &code, &sprites);
+    //
+    //std::fs::write(config.output, rom).expect("failed to write rom into specified output");
 
     Ok(())
 }

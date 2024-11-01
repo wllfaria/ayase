@@ -1,6 +1,6 @@
 ---
 source: aya-assembly/src/parser/instructions/mov.rs
-assertion_line: 240
+assertion_line: 238
 expression: result
 ---
 Instruction(

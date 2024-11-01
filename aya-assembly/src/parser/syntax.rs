@@ -72,7 +72,6 @@ pub fn parse_simple_address<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S
             help.as_ref(),
             message.as_ref(),
         )?))),
-        Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
         _ => return unexpected_token(source.as_ref(), token),
     };
 
@@ -111,7 +110,6 @@ pub fn parse_const<S: AsRef<str>>(source: S, lexer: &mut Lexer, exported: bool) 
     };
 
     let value = match next.kind {
-        Kind::Ampersand => parse_simple_address(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?,
         Kind::HexNumber => Statement::HexLiteral(parse_hex_lit(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?),
         _ => return unexpected_token(source.as_ref(), next),
     };

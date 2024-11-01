@@ -4,8 +4,8 @@ use crate::parser::common::parse_keyword;
 use crate::parser::Result;
 
 pub fn parse_hlt<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statement> {
-    parse_keyword(source.as_ref(), lexer, Kind::Hlt)?;
-    Ok(Instruction::Hlt.into())
+    let offset = parse_keyword(source.as_ref(), lexer, Kind::Hlt)?;
+    Ok(Instruction::Hlt(offset).into())
 }
 
 #[cfg(test)]

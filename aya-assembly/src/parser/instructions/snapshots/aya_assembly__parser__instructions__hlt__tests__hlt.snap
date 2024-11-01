@@ -3,5 +3,10 @@ source: aya-assembly/src/parser/instructions/hlt.rs
 expression: result
 ---
 Instruction(
-    Hlt,
+    Hlt(
+        ByteOffset {
+            start: 0,
+            end: 3,
+        },
+    ),
 )
