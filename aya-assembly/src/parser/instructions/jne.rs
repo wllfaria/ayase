@@ -4,13 +4,12 @@ use crate::parser::common::{expect, parse_hex_lit, parse_keyword, parse_register
 use crate::parser::error::{
     unexpected_eof, unexpected_token, ADDRESS_HELP, ADDRESS_MSG, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG,
 };
-use crate::parser::syntax::parse_simple_address;
-use crate::parser::Result;
+use crate::parser::{parse_address_ident, Result};
 
 pub fn parse_jne<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statement> {
     parse_keyword(source.as_ref(), lexer, Kind::Jne)?;
 
-    let lhs = parse_simple_address(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?;
+    let lhs = parse_address_ident(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?;
 
     expect(
         Kind::Comma,

@@ -61,7 +61,7 @@ impl From<Range<usize>> for ByteOffset {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Ast {
     pub statements: Vec<Statement>,
 }

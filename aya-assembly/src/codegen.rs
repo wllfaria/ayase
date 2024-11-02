@@ -53,6 +53,19 @@ impl<'codegen> CodeGenerator<'codegen> {
         &self.source[Range::from(*offset)]
     }
 
+    fn get_address(&self, node: &Statement) -> String {
+        let Statement::Address(inner) = node else {
+            unreachable!();
+        };
+        let value = &self.source[Range::from(inner.offset())];
+        match inner.as_ref() {
+            Statement::Register(_) => value.to_string(),
+            Statement::HexLiteral(_) => format!("${value}"),
+            Statement::Var(_) => format!("!{value}"),
+            stat => unreachable!("{stat:?}"),
+        }
+    }
+
     fn generate(&mut self) -> miette::Result<()> {
         for stat in self.ast.statements.iter() {
             match stat {
@@ -94,20 +107,34 @@ impl<'codegen> CodeGenerator<'codegen> {
                 Statement::Instruction(inst) => match inst.as_ref() {
                     Instruction::MovLitReg(lhs, rhs) => {
                         let lhs = self.get_register(lhs);
-                        self.generate_code(rhs, Some(lhs.into()))?;
+                        self.generate_code("mov", rhs, Some(lhs.into()))?;
                         self.release_all_temp_registers();
                     }
                     Instruction::MovRegReg(lhs, rhs) => {
                         let lhs = self.get_register(lhs);
                         let rhs = self.get_register(rhs);
-                        self.code.push(format!("mov {lhs}, {rhs}"));
+                        self.code.push(format!("  mov {lhs}, {rhs}"));
                     }
-                    Instruction::MovRegMem(_, _) => todo!(),
+                    Instruction::MovRegMem(lhs, rhs) => {
+                        let lhs = self.get_address(lhs);
+                        let rhs = self.get_register(rhs);
+                        self.code.push(format!("  mov &[{lhs}], {rhs}"));
+                        self.release_all_temp_registers();
+                    }
                     Instruction::MovMemReg(_, _) => todo!(),
-                    Instruction::MovLitMem(_, _) => todo!(),
+                    Instruction::MovLitMem(lhs, rhs) => {
+                        let lhs = self.get_address(lhs);
+                        self.generate_code("mov", rhs, Some(lhs))?;
+                        self.release_all_temp_registers();
+                    }
                     Instruction::MovRegPtrReg(_, _) => todo!(),
                     Instruction::AddRegReg(_, _) => todo!(),
-                    Instruction::AddLitReg(_, _) => todo!(),
+                    Instruction::AddLitReg(lhs, rhs) => {
+                        let lhs = self.get_register(lhs).to_string();
+                        let rhs = self.generate_code("mov", rhs, None)?;
+                        self.code.push(format!("  add {lhs}, {rhs}"));
+                        self.release_all_temp_registers();
+                    }
                     Instruction::SubRegReg(_, _) => todo!(),
                     Instruction::SubLitReg(_, _) => todo!(),
                     Instruction::MulRegReg(_, _) => todo!(),
@@ -133,16 +160,33 @@ impl<'codegen> CodeGenerator<'codegen> {
                     Instruction::JneReg(_, _) => todo!(),
                     Instruction::JgeLit(_, _) => todo!(),
                     Instruction::JgeReg(_, _) => todo!(),
-                    Instruction::JleLit(_, _) => todo!(),
+                    Instruction::JleLit(lhs, rhs) => {
+                        let lhs = self.get_address(lhs);
+                        let dest = self.generate_code("mov", rhs, None)?;
+                        self.code.push(format!("  jle &[{lhs}], {dest}"));
+                        self.release_all_temp_registers();
+                    }
                     Instruction::JleReg(_, _) => todo!(),
                     Instruction::JltLit(_, _) => todo!(),
                     Instruction::JltReg(_, _) => todo!(),
-                    Instruction::Jmp(_) => todo!(),
+                    Instruction::Jmp(address) => {
+                        let address = self.get_address(address);
+                        self.code.push(format!("  jmp &[{address}]"));
+                    }
                     Instruction::PshLit(_) => todo!(),
-                    Instruction::PshReg(_) => todo!(),
+                    Instruction::PshReg(reg) => {
+                        let reg = self.get_register(reg);
+                        self.code.push(format!("  psh {reg}"));
+                    }
                     Instruction::Pop(_) => todo!(),
-                    Instruction::CallLit(_) => todo!(),
-                    Instruction::Ret(_) => todo!(),
+                    Instruction::CallLit(lit) => {
+                        let dest = self.generate_code("mov", lit, None)?;
+                        self.code.push(format!("  call {dest}"));
+                        self.release_all_temp_registers();
+                    }
+                    Instruction::Ret(_) => {
+                        self.code.push("  ret".to_string());
+                    }
                     Instruction::Hlt(_) => todo!(),
                 },
                 _ => {}
@@ -152,10 +196,10 @@ impl<'codegen> CodeGenerator<'codegen> {
         Ok(())
     }
 
-    fn generate_code(&mut self, node: &Statement, target: Option<String>) -> miette::Result<String> {
+    fn generate_code(&mut self, op: &str, node: &Statement, target: Option<String>) -> miette::Result<String> {
         if let Some(value) = self.evaluate_constants(node) {
             let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
-            self.code.push(format!("  mov {dest}, {value}"));
+            self.code.push(format!("  {op} {dest}, {value}"));
             return Ok(dest);
         };
 
@@ -163,18 +207,22 @@ impl<'codegen> CodeGenerator<'codegen> {
             Statement::HexLiteral(value) => {
                 let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
                 let value = &self.source[Range::from(*value)];
-                self.code.push(format!("  mov {dest}, {value}"));
+                self.code.push(format!("  {op} {dest}, {value}"));
                 Ok(dest)
             }
             Statement::Register(reg) => {
                 let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
                 let reg = &self.source[Range::from(*reg)];
-                self.code.push(format!("  mov {dest}, {reg}"));
+                self.code.push(format!("  {op} {dest}, {reg}"));
                 Ok(dest)
             }
+            Statement::Var(var) => {
+                let var = &self.source[Range::from(*var)];
+                Ok(format!("!{var}"))
+            }
             Statement::BinaryOp { lhs, operator, rhs } => {
-                let lhs = self.generate_code(lhs, None)?;
-                let rhs = self.generate_code(rhs, None)?;
+                let lhs = self.generate_code("mov", lhs, None)?;
+                let rhs = self.generate_code("mov", rhs, None)?;
 
                 // Determine the target register
                 let dest = target.unwrap_or(lhs.clone());
@@ -266,6 +314,11 @@ pub fn generate(modules: ResolvedModules) -> miette::Result<Vec<CodegenModule>> 
         };
         gen_modules.push(module);
     }
+
+    for module in gen_modules.iter() {
+        println!("{}", module.code)
+    }
+
     Ok(gen_modules)
 }
 
@@ -287,7 +340,6 @@ mod tests {
         "#;
         let modules = mod_resolver::resolve(code.into(), "path.aya").unwrap();
         let modules = generate(modules).unwrap();
-        println!("{}", modules[0].code);
 
         panic!();
     }

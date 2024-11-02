@@ -1,6 +1,7 @@
+use super::mov::peek;
 use crate::lexer::{Kind, Lexer, TransposeRef};
 use crate::parser::ast::{Instruction, Statement};
-use crate::parser::common::{expect, parse_hex_lit, parse_keyword, parse_register};
+use crate::parser::common::{expect, parse_hex_lit, parse_keyword, parse_register, parse_variable};
 use crate::parser::error::{unexpected_eof, unexpected_token, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG};
 use crate::parser::Result;
 
@@ -17,23 +18,18 @@ pub fn parse_add<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
         COMMA_MSG,
     )?;
 
-    let Ok(Some(token)) = lexer.peek().transpose() else {
-        let Err(err) = lexer.next().transpose() else {
-            return unexpected_eof(source.as_ref(), "unterminated import statement");
-        };
-        return Err(err);
-    };
-
-    let kind = token.kind;
-    let rhs = match kind {
+    let token = peek(source.as_ref(), lexer)?;
+    let rhs = match token.kind {
         Kind::Ident => Statement::Register(parse_register(source.as_ref(), lexer)?),
         Kind::HexNumber => Statement::HexLiteral(parse_hex_lit(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?),
-        _ => return unexpected_token(source.as_ref(), token),
+        Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, "", "")?),
+        _ => return unexpected_token(source.as_ref(), &token),
     };
 
-    match kind {
+    match token.kind {
         Kind::Ident => Ok(Instruction::AddRegReg(lhs, rhs).into()),
         Kind::HexNumber => Ok(Instruction::AddLitReg(lhs, rhs).into()),
+        Kind::Bang => Ok(Instruction::AddLitReg(lhs, rhs).into()),
         _ => unreachable!(),
     }
 }

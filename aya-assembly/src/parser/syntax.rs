@@ -40,13 +40,18 @@ pub fn parse_address_ident<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S,
             help.as_ref(),
             message.as_ref(),
         )?))),
-        Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, help.as_ref(), message.as_ref())?),
-        Kind::Ident => Statement::Register(parse_identifier(
+        Kind::Bang => Statement::Address(Box::new(Statement::Var(parse_variable(
             source.as_ref(),
             lexer,
             help.as_ref(),
             message.as_ref(),
-        )?),
+        )?))),
+        Kind::Ident => Statement::Address(Box::new(Statement::Register(parse_identifier(
+            source.as_ref(),
+            lexer,
+            help.as_ref(),
+            message.as_ref(),
+        )?))),
         _ => return unexpected_token(source.as_ref(), token),
     };
 

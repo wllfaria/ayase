@@ -1,16 +1,26 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use crate::parser::ast::{Ast, Statement};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Either {
     ResolvedValue(u16),
     ModuleField { module: String, field: String },
 }
 
-#[derive(Debug)]
+impl Either {
+    pub fn to_value(&self) -> u16 {
+        let Either::ResolvedValue(value) = self else {
+            panic!("conversion of Eiter::ModuleField into u16 is not possible");
+        };
+
+        *value
+    }
+}
+
+#[derive(Debug, Default, Clone)]
 pub struct ResolvedModule {
     pub name: String,
     pub path: PathBuf,
@@ -69,11 +79,126 @@ pub fn resolve<P: AsRef<Path>>(code: String, path: P) -> miette::Result<Resolved
 
     resolve_module("main", path.clone(), code, None, &mut context)?;
 
+    let mut sorted = topological_sort(&context.modules);
+
+    for i in 0..sorted.len() {
+        if sorted[i] == usize::MAX {
+            continue;
+        };
+        let mut target = sorted[i];
+        let value = std::mem::take(&mut context.modules[i]);
+        let ast = std::mem::take(&mut context.asts[i]);
+        let mut x = i;
+        while i != target {
+            sorted[x] = usize::MAX;
+            context.modules.swap(x, target);
+            context.asts.swap(x, target);
+            x = target;
+            target = sorted[x];
+        }
+        context.modules[x] = value;
+        context.asts[x] = ast;
+        sorted[x] = usize::MAX;
+    }
+
+    let symbols: HashMap<(String, String), u16> = context
+        .modules
+        .iter()
+        .flat_map(|module| {
+            module
+                .symbols
+                .iter()
+                .map(move |(field, value)| ((module.name.to_string(), field.to_string()), *value))
+        })
+        .collect();
+
+    for module in context.modules.iter_mut() {
+        if let Some(variables) = &mut module.variables {
+            for value in variables.values_mut() {
+                if let Either::ModuleField { module, field } = value {
+                    let new_value = symbols.get(&(module.to_string(), field.to_string())).unwrap();
+                    *value = Either::ResolvedValue(*new_value);
+                }
+            }
+        }
+    }
+
     Ok(ResolvedModules {
         sources: context.sources,
         asts: context.asts,
         modules: context.modules,
     })
+}
+
+fn topological_sort(modules: &[ResolvedModule]) -> Vec<usize> {
+    let mut sorted = Vec::with_capacity(modules.len());
+    let mut idx_path = HashMap::with_capacity(modules.len());
+    let mut idx_name = HashMap::with_capacity(modules.len());
+
+    for (idx, module) in modules.iter().enumerate() {
+        idx_path.insert(&module.path, idx);
+        idx_name.insert(&module.name, idx);
+    }
+
+    let mut in_degrees = vec![0; modules.len()];
+    for module in modules.iter() {
+        for import in &module.imports {
+            if let Some(&idx) = idx_path.get(import) {
+                in_degrees[idx] += 1;
+            }
+        }
+
+        if let Some(ref variables) = module.variables {
+            for value in variables.values() {
+                if let Either::ModuleField { module, .. } = value {
+                    if let Some(&idx) = idx_name.get(&module) {
+                        in_degrees[idx] += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    let mut queue = VecDeque::new();
+    for (index, degree) in in_degrees.iter().enumerate() {
+        if *degree == 0 {
+            queue.push_back(index);
+        }
+    }
+
+    while let Some(idx) = queue.pop_front() {
+        let module = &modules[idx];
+        sorted.push(idx);
+
+        for import in &module.imports {
+            if let Some(&idx) = idx_path.get(import) {
+                in_degrees[idx] -= 1;
+                if in_degrees[idx] == 0 {
+                    queue.push_back(idx);
+                }
+            }
+        }
+
+        if let Some(ref variables) = module.variables {
+            for value in variables.values() {
+                if let Either::ModuleField { module, .. } = value {
+                    if let Some(&idx) = idx_name.get(&module) {
+                        in_degrees[idx] -= 1;
+                        if in_degrees[idx] == 0 {
+                            queue.push_back(idx);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if sorted.len() != modules.len() {
+        panic!("cyclic dependency, probably");
+    }
+
+    sorted.reverse();
+    sorted
 }
 
 struct Context {
@@ -178,6 +303,7 @@ fn resolve_import_vars(
         }
 
         match value.as_ref() {
+            // NOTE: if the variable references a var, it can only refence constants.
             Statement::Var(offset) => {
                 let var = &code[Range::from(*offset)];
                 let Some(value) = module.symbols.get(var) else {
