@@ -9,7 +9,6 @@ mod utils;
 use std::path::Path;
 
 pub use codegen::generate;
-use codegen::CodegenModule;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum AssembleBehavior {
@@ -18,10 +17,9 @@ pub enum AssembleBehavior {
 }
 
 #[derive(Debug)]
-#[allow(clippy::large_enum_variant)]
 pub enum AssembleOutput {
     Bytecode(Vec<u8>),
-    Codegen(CodegenModule),
+    Codegen(String),
 }
 
 pub fn assemble<P: AsRef<Path>>(path: P, behavior: AssembleBehavior) -> miette::Result<AssembleOutput> {
@@ -30,7 +28,16 @@ pub fn assemble<P: AsRef<Path>>(path: P, behavior: AssembleBehavior) -> miette::
     let modules = codegen::generate(modules)?;
 
     match behavior {
-        AssembleBehavior::Codegen => todo!(),
+        AssembleBehavior::Codegen => Ok(AssembleOutput::Codegen(modules.iter().fold(
+            String::default(),
+            |mut acc, m| {
+                if !m.code.is_empty() {
+                    acc.push_str(&m.code);
+                    acc.push('\n');
+                }
+                acc
+            },
+        ))),
         AssembleBehavior::Bytecode => Ok(AssembleOutput::Bytecode(compiler::compile(modules)?)),
     }
 }

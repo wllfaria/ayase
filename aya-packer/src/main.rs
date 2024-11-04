@@ -2,6 +2,7 @@ mod config;
 mod rom;
 
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 use aya_assembly::{AssembleBehavior, AssembleOutput};
 use clap::Parser;
@@ -24,11 +25,14 @@ pub struct Args {
     #[arg(short, required = false, long)]
     output: Option<String>,
 
+    #[arg(short, required = false, long)]
+    expand: Option<bool>,
+
     #[arg(long, required = false)]
     config: Option<String>,
 }
 
-fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
+fn main() -> std::result::Result<ExitCode, Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let config = match args.code.is_some() {
@@ -38,8 +42,21 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     };
 
     let path = PathBuf::from(&config.code);
-    let AssembleOutput::Bytecode(code) = aya_assembly::assemble(&path, AssembleBehavior::Bytecode)? else {
-        unreachable!()
+
+    let behavior = if config.expand { AssembleBehavior::Codegen } else { AssembleBehavior::Bytecode };
+
+    let output = aya_assembly::assemble(&path, behavior)?;
+
+    if config.expand {
+        let AssembleOutput::Codegen(code) = output else {
+            unreachable!();
+        };
+        std::fs::write(config.output, code).expect("failed to write expanded code into specified output");
+        return Ok(ExitCode::FAILURE);
+    }
+
+    let AssembleOutput::Bytecode(code) = output else {
+        unreachable!();
     };
 
     let mut sprites = vec![];
@@ -48,11 +65,21 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         sprites.push(aya_bitmap::decode(path)?);
     }
 
-    let sprites = rom::compile_sprites(sprites)?;
+    let sprites = match rom::compile_sprites(sprites) {
+        Ok(sprites) => sprites,
+        Err(rom::Error::SpriteTooBig(msg)) => {
+            eprintln!("{msg}");
+            return Ok(ExitCode::FAILURE);
+        }
+        Err(rom::Error::UnknownColor(msg)) => {
+            eprintln!("{msg}");
+            return Ok(ExitCode::FAILURE);
+        }
+    };
     let header = rom::make_header(&config, code.len() as u16, sprites.len() as u16);
     let rom = rom::compile(&header, &code, &sprites);
 
     std::fs::write(config.output, rom).expect("failed to write rom into specified output");
 
-    Ok(())
+    Ok(ExitCode::SUCCESS)
 }

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use aya_cpu::register::Register;
 
-use crate::mod_resolver::{Either, ResolvedModules};
+use crate::mod_resolver::{Either, ResolvedModule, ResolvedModules};
 use crate::parser::ast::{Ast, Instruction, Operator, Statement};
 use crate::parser::error::{REGISTER_HELP, REGISTER_MSG};
 use crate::utils::{bail, unexpected_statement};
@@ -128,19 +128,20 @@ impl<'codegen> CodeGenerator<'codegen> {
         Self {
             source,
             ast,
-            code: Vec::new(),
-            temp_registers: vec![
-                Register::Acc,
-                Register::R1,
-                Register::R2,
-                Register::R3,
-                Register::R4,
-                Register::R5,
-                Register::R6,
-                Register::R7,
-                Register::R8,
-            ],
+            code: vec![],
+            temp_registers: vec![Register::Acc, Register::R5, Register::R6, Register::R7, Register::R8],
             used_registers: Vec::with_capacity(8),
+        }
+    }
+
+    fn with_module(self, module: &ResolvedModule) -> Self {
+        let file = format!("; {} @ {}", module.name, module.path.to_string_lossy());
+        Self {
+            source: self.source,
+            ast: self.ast,
+            code: vec![file],
+            temp_registers: self.temp_registers,
+            used_registers: self.used_registers,
         }
     }
 
@@ -149,8 +150,9 @@ impl<'codegen> CodeGenerator<'codegen> {
             match stat {
                 Statement::Data { .. } => self.gen_data(stat)?,
                 Statement::Label { .. } => self.gen_label(stat),
+                Statement::Const { .. } => self.gen_const(stat)?,
                 Statement::Instruction(inst) => self.gen_instruction(inst.as_ref())?,
-                _ => unreachable!(),
+                _ => {}
             }
         }
 
@@ -164,20 +166,29 @@ impl<'codegen> CodeGenerator<'codegen> {
         target: Option<Register>,
     ) -> miette::Result<Register> {
         if let Some(value) = self.evaluate_constants(node)? {
-            let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
+            let dest = match target {
+                Some(target) => target,
+                None => self.get_temp_register(node)?,
+            };
             self.code.push(formatted!(prefix, dest, value));
             return Ok(dest);
         };
 
         match node {
             Statement::HexLiteral(value) => {
-                let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
+                let dest = match target {
+                    Some(target) => target,
+                    None => self.get_temp_register(node)?,
+                };
                 let value = &self.source[Range::from(*value)];
                 self.code.push(formatted!(prefix, dest, value));
                 Ok(dest)
             }
             Statement::Register(reg) => {
-                let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
+                let dest = match target {
+                    Some(target) => target,
+                    None => self.get_temp_register(node)?,
+                };
                 let reg = &self.source[Range::from(*reg)];
                 let reg = match Register::try_from(reg) {
                     Ok(reg) => reg,
@@ -187,7 +198,10 @@ impl<'codegen> CodeGenerator<'codegen> {
                 Ok(dest)
             }
             Statement::Var(var) => {
-                let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
+                let dest = match target {
+                    Some(target) => target,
+                    None => self.get_temp_register(node)?,
+                };
                 let var = var.get_source(&self.source);
                 self.code.push(formatted!(prefix, dest, "!{var}"));
                 Ok(dest)
@@ -244,15 +258,20 @@ impl<'codegen> CodeGenerator<'codegen> {
         }
     }
 
-    fn get_temp_register(&mut self) -> miette::Result<Register> {
+    fn get_temp_register(&mut self, node: &Statement) -> miette::Result<Register> {
         if let Some(reg) = self.temp_registers.pop() {
             let prefix = InstructionPrefix::Psh;
             self.code.push(formatted!(prefix, reg));
             self.used_registers.push(reg);
-            Ok(reg)
-        } else {
-            panic!();
-        }
+            return Ok(reg);
+        };
+
+        Err(bail(
+            self.source,
+            "this expression is too large, consider decomposing it into multiple instructions",
+            "[CODEGEN_ERROR]: expression too large",
+            node.offset(),
+        ))
     }
 
     fn release_all_temp_registers(&mut self) {
@@ -376,6 +395,15 @@ impl<'codegen> CodeGenerator<'codegen> {
         self.code.push(format!("{exported}{name}:"));
     }
 
+    fn gen_const(&mut self, statement: &Statement) -> miette::Result<()> {
+        let Statement::Const { name, exported, value } = statement else { unreachable!() };
+        let exported = exported.to_exported_prefix();
+        let name = &self.source[Range::from(*name)];
+        let value = self.gen_hex_lit(value.as_ref())?;
+        self.code.push(format!("{exported}const {name} = {value}"));
+        Ok(())
+    }
+
     fn gen_instruction(&mut self, instruction: &Instruction) -> miette::Result<()> {
         match instruction {
             Instruction::MovRegReg(lhs, rhs) => {
@@ -463,6 +491,12 @@ impl<'codegen> CodeGenerator<'codegen> {
                 if let Statement::Var(offset) = rhs {
                     let var_name = offset.get_source(&self.source);
                     self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = rhs {
+                    let hex = self.gen_hex_lit(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", hex));
                     return Ok(());
                 }
 
@@ -1080,7 +1114,7 @@ impl std::fmt::Display for CodeGenerator<'_> {
 pub fn generate(modules: ResolvedModules) -> miette::Result<Vec<CodegenModule>> {
     let mut gen_modules = vec![];
     for (module, source, ast) in modules {
-        let mut codegen = CodeGenerator::new(&source, &ast);
+        let mut codegen = CodeGenerator::new(&source, &ast).with_module(&module);
         codegen.generate()?;
         let code = codegen.to_string();
 
@@ -1094,10 +1128,6 @@ pub fn generate(modules: ResolvedModules) -> miette::Result<Vec<CodegenModule>> 
             exports: Default::default(),
         };
         gen_modules.push(module);
-    }
-
-    for module in gen_modules.iter() {
-        println!("{}", module.code)
     }
 
     Ok(gen_modules)
@@ -1394,6 +1424,18 @@ POP R8
 MOV &[!var], R8"#
         );
 
+        let source = "mov &[r2], &[r3]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV &[r2], &[r3]");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_gen_too_large() {
         let source = "mov &[!var + $c0d3 + r2], [$c0d3 + r2 + !var]";
         let ast = crate::parser::parse(source).unwrap();
         let mut generator = CodeGenerator::new(source, &ast);
@@ -1426,14 +1468,6 @@ POP R7
 POP R8
 MOV &[R8], R5"#
         );
-
-        let source = "mov &[r2], &[r3]";
-        let ast = crate::parser::parse(source).unwrap();
-        let mut generator = CodeGenerator::new(source, &ast);
-
-        generator.generate().unwrap();
-        let result = generator.to_string();
-        assert_eq!(result, "MOV &[r2], &[r3]");
     }
 
     #[test]

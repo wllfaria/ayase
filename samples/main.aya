@@ -15,5 +15,7 @@ start:
   mov &[$6680], $0302
   mov &[$6682], $0504
   mov r1, !loop
-  call !fill
+  call &[!fill]
 
+loop:
+  jmp &[!loop]

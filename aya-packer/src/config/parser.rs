@@ -13,6 +13,7 @@ pub enum Key {
     Sprites(Vec<ByteOffset>),
     Name(ByteOffset),
     Output(ByteOffset),
+    Expand(ByteOffset),
 }
 
 impl std::fmt::Display for Key {
@@ -22,6 +23,7 @@ impl std::fmt::Display for Key {
             Key::Sprites(_) => write!(f, "sprites"),
             Key::Name(_) => write!(f, "name"),
             Key::Output(_) => write!(f, "output"),
+            Key::Expand(_) => write!(f, "expand"),
         }
     }
 }
@@ -68,6 +70,7 @@ fn parse_key<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miette::Result
         "code" => parse_code_key(lexer)?,
         "output" => parse_output_key(lexer)?,
         "name" => parse_name_key(lexer)?,
+        "expand" => parse_expand_key(lexer)?,
         _ => {
             return Err(bail(
                 source,
@@ -97,6 +100,12 @@ fn parse_output_key(lexer: &mut Lexer<'_>) -> miette::Result<Key> {
     lexer.expect(Kind::Equal)?;
     let token = lexer.expect(Kind::String)?;
     Ok(Key::Output(token.offset))
+}
+
+fn parse_expand_key(lexer: &mut Lexer<'_>) -> miette::Result<Key> {
+    lexer.expect(Kind::Equal)?;
+    let token = lexer.expect(Kind::Bool)?;
+    Ok(Key::Expand(token.offset))
 }
 
 fn parse_sprites_key<'par>(source: &'par str, lexer: &mut Lexer<'par>) -> miette::Result<Key> {
@@ -218,6 +227,7 @@ mod tests {
             output: String::from("my_game.out"),
             code: String::from("main.aya"),
             sprites: vec![String::from("assets/spritesheet.bmp")],
+            expand: false,
         };
 
         let config = make_sut(input);
@@ -245,6 +255,7 @@ mod tests {
                 String::from("assets/02.bmp"),
                 String::from("assets/03.bmp"),
             ],
+            expand: false,
         };
 
         let config = make_sut(input);

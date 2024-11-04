@@ -54,6 +54,7 @@ pub enum Kind {
     Comma,
     LeftBracket,
     RightBracket,
+    Bool,
 }
 
 impl std::fmt::Display for Kind {
@@ -65,6 +66,7 @@ impl std::fmt::Display for Kind {
             Kind::Comma => write!(f, "COMMA"),
             Kind::LeftBracket => write!(f, "LEFT_BRACKET"),
             Kind::RightBracket => write!(f, "RIGHT_BRACKET"),
+            Kind::Bool => write!(f, "BOOL"),
         }
     }
 }
@@ -123,8 +125,15 @@ impl<'lex> Lexer<'lex> {
             .source
             .find(|ch| !matches!(ch, 'a'..='z' | 'A'..='Z' | '_' | '0'..='9'))
             .unwrap_or(self.source.len());
+
+        let ident = &self.source[..end_of_ident];
+
         self.advance(end_of_ident);
-        Token::new(Kind::Ident, start..start + end_of_ident)
+        match ident {
+            "true" => Token::new(Kind::Bool, start..start + end_of_ident),
+            "false" => Token::new(Kind::Bool, start..start + end_of_ident),
+            _ => Token::new(Kind::Ident, start..start + end_of_ident),
+        }
     }
 
     fn lex_string(&mut self) -> miette::Result<Token> {

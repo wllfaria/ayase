@@ -8,7 +8,7 @@ use crate::utils::{bail, unexpected_eof, unexpected_token};
 pub fn peek<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Token> {
     let Ok(Some(token)) = lexer.peek().transpose() else {
         let Err(err) = lexer.next().transpose() else {
-            return unexpected_eof(source.as_ref(), "unterminated mov instruction");
+            return unexpected_eof(source.as_ref(), "unterminated instruction");
         };
         return Err(err);
     };

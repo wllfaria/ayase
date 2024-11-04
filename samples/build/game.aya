@@ -1,0 +1,22 @@
+; Module @ ../samples/module.aya
++const to_add = $0002
+; Secondary @ ../samples/secondary.aya
++fill:
+JLE &[r1], $0400
+MOV &[r8], R7
+ADD R8, !to_add
+ADD ACC, !to_add
+JMP &[!fill]
+RET
+; main @ ./main.aya
+const other = $1234
+start:
+MOV ACC, $0000
+MOV R8, $6280
+MOV R7, $0607
+MOV &[$6680], $0302
+MOV &[$6682], $0504
+MOV R1, !loop
+CALL &[!fill]
+loop:
+JMP &[!loop]

@@ -2,6 +2,7 @@ mod error;
 mod header;
 mod sprites;
 
+pub use error::Error;
 pub use header::make_header;
 pub use sprites::compile_sprites;
 

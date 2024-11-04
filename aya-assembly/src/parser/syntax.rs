@@ -1,3 +1,4 @@
+use super::common::peek;
 use super::Result;
 use crate::lexer::{Kind, Lexer, TransposeRef};
 use crate::parser::ast::Statement;
@@ -70,16 +71,10 @@ pub fn parse_const<S: AsRef<str>>(source: S, lexer: &mut Lexer, exported: bool) 
 
     expect_fail(Kind::Equal, lexer, source.as_ref())?;
 
-    let Ok(Some(next)) = lexer.peek().transpose() else {
-        let Err(err) = lexer.next().transpose() else {
-            return unexpected_eof(source.as_ref(), "unterminated import statement");
-        };
-        return Err(err);
-    };
-
+    let next = peek(source.as_ref(), lexer)?;
     let value = match next.kind {
         Kind::HexNumber => Statement::HexLiteral(parse_hex_lit(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?),
-        _ => return unexpected_token(source.as_ref(), next),
+        _ => return unexpected_token(source.as_ref(), &next),
     };
 
     Ok(Statement::Const {

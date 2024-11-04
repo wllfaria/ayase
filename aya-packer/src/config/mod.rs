@@ -8,6 +8,7 @@ pub struct Config {
     pub sprites: Vec<String>,
     pub name: String,
     pub output: String,
+    pub expand: bool,
 }
 
 impl Config {
@@ -17,6 +18,7 @@ impl Config {
             code: args.code.unwrap(),
             sprites: args.sprites.unwrap(),
             output: args.output.unwrap_or("a.out".into()),
+            expand: args.expand.unwrap_or(false),
         }
     }
 
@@ -26,7 +28,8 @@ impl Config {
                 return None;
             };
             Some(*offset)
-        });
+        })
+        .expect("we failed to parse every key in the parsing step");
         let code = source[std::ops::Range::<usize>::from(code)].to_string();
 
         let sprites = extract_key(&keys, |key| {
@@ -34,7 +37,8 @@ impl Config {
                 return None;
             };
             Some(offsets.clone())
-        });
+        })
+        .expect("we failed to parse every key in the parsing step");
 
         let sprites = sprites
             .into_iter()
@@ -46,7 +50,8 @@ impl Config {
                 return None;
             };
             Some(*offset)
-        });
+        })
+        .expect("we failed to parse every key in the parsing step");
         let name = source[std::ops::Range::<usize>::from(name)].to_string();
 
         let output = extract_key(&keys, |key| {
@@ -54,22 +59,33 @@ impl Config {
                 return None;
             };
             Some(*offset)
-        });
+        })
+        .expect("we failed to parse every key in the parsing step");
         let output = source[std::ops::Range::<usize>::from(output)].to_string();
+
+        let expand = extract_key(&keys, |key| {
+            let Key::Expand(offset) = key else {
+                return None;
+            };
+            Some(*offset)
+        });
+        let expand = expand
+            .map(|offset| source[std::ops::Range::<usize>::from(offset)].to_string())
+            .map(|val| val == "true")
+            .unwrap_or(false);
 
         Self {
             code,
             sprites,
             name,
             output,
+            expand,
         }
     }
 }
 
-fn extract_key<T, F: FnMut(&Key) -> Option<T>>(keys: &[Key], f: F) -> T {
-    keys.iter()
-        .find_map(f)
-        .expect("we failed to parse every key in the parsing step")
+fn extract_key<T, F: FnMut(&Key) -> Option<T>>(keys: &[Key], f: F) -> Option<T> {
+    keys.iter().find_map(f)
 }
 
 pub fn read_from_file<P: AsRef<std::path::Path>>(path: P) -> miette::Result<Config> {
