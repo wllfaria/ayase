@@ -247,6 +247,8 @@ pub enum Instruction {
     Call(Statement),
     Ret(ByteOffset),
     Hlt(ByteOffset),
+    Int(Statement),
+    Rti(ByteOffset),
 }
 
 impl Instruction {
@@ -293,9 +295,10 @@ impl Instruction {
             | Instruction::Inc(lhs)
             | Instruction::Dec(lhs)
             | Instruction::Jmp(lhs)
+            | Instruction::Int(lhs)
             | Instruction::Not(lhs) => lhs,
 
-            Instruction::Ret(_) | Instruction::Hlt(_) => unreachable!(),
+            Instruction::Ret(_) | Instruction::Hlt(_) | Instruction::Rti(_) => unreachable!(),
         }
     }
 
@@ -345,7 +348,9 @@ impl Instruction {
             | Instruction::Not(_)
             | Instruction::Jmp(_)
             | Instruction::Ret(_)
-            | Instruction::Hlt(_) => unreachable!(),
+            | Instruction::Hlt(_)
+            | Instruction::Rti(_)
+            | Instruction::Int(_) => unreachable!(),
         }
     }
 
@@ -399,6 +404,8 @@ impl Instruction {
             Instruction::JltLit(_, _) => OpCode::JltLit,
             Instruction::JltReg(_, _) => OpCode::JltReg,
             Instruction::Jmp(_) => OpCode::Jmp,
+            Instruction::Int(_) => OpCode::Int,
+            Instruction::Rti(_) => OpCode::Rti,
         }
     }
 
@@ -448,8 +455,10 @@ impl Instruction {
 
             Instruction::MovMemReg(_, _) => InstructionKind::MemReg,
             Instruction::MovRegPtrReg(_, _) => InstructionKind::RegPtrReg,
-            Instruction::PshLit(_) | Instruction::Call(_) | Instruction::Jmp(_) => InstructionKind::SingleLit,
-            Instruction::Ret(_) | Instruction::Hlt(_) => InstructionKind::NoArgs,
+            Instruction::PshLit(_) | Instruction::Call(_) | Instruction::Jmp(_) | Instruction::Int(_) => {
+                InstructionKind::SingleLit
+            }
+            Instruction::Ret(_) | Instruction::Hlt(_) | Instruction::Rti(_) => InstructionKind::NoArgs,
         }
     }
 
@@ -503,6 +512,8 @@ impl Instruction {
             Instruction::Call(stat) => (stat.offset().start - BIG..stat.offset().end).into(),
             Instruction::Ret(offset) => *offset,
             Instruction::Hlt(offset) => *offset,
+            Instruction::Int(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
+            Instruction::Rti(offset) => *offset,
         }
     }
 }

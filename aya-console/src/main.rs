@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rom_file = rom_loader::load_from_file(&rom_file);
 
     let memory = setup_memory(&rom_file);
-    let mut cpu = Cpu::new(memory, CODE_MEM_LOC.0, STACK_MEM_LOC.1);
+    let mut cpu = Cpu::new(memory, CODE_MEM_LOC.0, STACK_MEM_LOC.1, 0x1000);
     cpu.load_into_address(rom_file.code, CODE_MEM_LOC.0).unwrap();
 
     let fps = 60.0;

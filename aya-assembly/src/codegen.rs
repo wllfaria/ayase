@@ -56,6 +56,8 @@ enum InstructionPrefix {
     Jlt,
     Jmp,
     Hlt,
+    Rti,
+    Int,
 }
 
 impl std::fmt::Display for InstructionPrefix {
@@ -85,6 +87,8 @@ impl std::fmt::Display for InstructionPrefix {
             InstructionPrefix::Jlt => write!(f, "JLT"),
             InstructionPrefix::Jmp => write!(f, "JMP"),
             InstructionPrefix::Hlt => write!(f, "HLT"),
+            InstructionPrefix::Rti => write!(f, "RTI"),
+            InstructionPrefix::Int => write!(f, "INT"),
         }
     }
 }
@@ -491,18 +495,20 @@ impl<'codegen> CodeGenerator<'codegen> {
                 if let Statement::Var(offset) = rhs {
                     let var_name = offset.get_source(&self.source);
                     self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    self.release_all_temp_registers();
                     return Ok(());
                 }
 
                 if let Statement::HexLiteral(_) = rhs {
                     let hex = self.gen_hex_lit(rhs)?;
                     self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                    self.release_all_temp_registers();
                     return Ok(());
                 }
 
                 let rhs = self.generate_code(InstructionPrefix::Mov, rhs, None)?;
-                self.release_all_temp_registers();
                 self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                self.release_all_temp_registers();
             }
             Instruction::MovRegPtrReg(lhs, rhs) => {
                 let prefix = InstructionPrefix::Mov;
@@ -1099,6 +1105,15 @@ impl<'codegen> CodeGenerator<'codegen> {
                 let prefix = InstructionPrefix::Hlt;
                 self.code.push(prefix.to_string());
             }
+            Instruction::Int(lit) => {
+                let prefix = InstructionPrefix::Int;
+                let lit = self.gen_hex_lit(lit)?;
+                self.code.push(formatted!(prefix, lit));
+            }
+            Instruction::Rti(_) => {
+                let prefix = InstructionPrefix::Rti;
+                self.code.push(prefix.to_string());
+            }
         };
 
         Ok(())
@@ -1329,13 +1344,7 @@ POP R8"#
 
         generator.generate().unwrap();
         let result = generator.to_string();
-        assert_eq!(
-            result,
-            r#"PSH R8
-MOV R8, $C0D3
-POP R8
-MOV &[$C0D3], R8"#
-        );
+        assert_eq!(result, "MOV &[$C0D3], $C0D3");
 
         let source = "mov &[!var], $c0d3";
         let ast = crate::parser::parse(source).unwrap();
@@ -1343,13 +1352,7 @@ MOV &[$C0D3], R8"#
 
         generator.generate().unwrap();
         let result = generator.to_string();
-        assert_eq!(
-            result,
-            r#"PSH R8
-MOV R8, $C0D3
-POP R8
-MOV &[!var], R8"#
-        );
+        assert_eq!(result, "MOV &[!var], $C0D3");
 
         let source = "mov &[$c0d3 + r2], $c0d3";
         let ast = crate::parser::parse(source).unwrap();
@@ -1364,12 +1367,9 @@ MOV R8, $C0D3
 PSH R7
 MOV R7, R2
 ADD R8, R7
-PSH R6
-MOV R6, $C0D3
-POP R6
+MOV &[R8], $C0D3
 POP R7
-POP R8
-MOV &[R8], R6"#
+POP R8"#
         );
 
         let source = "mov &[$c0d3], !var";
@@ -1396,10 +1396,10 @@ PSH R6
 MOV R6, !var
 ADD R7, R6
 ADD R8, R7
+MOV &[$C0D3], R8
 POP R6
 POP R7
-POP R8
-MOV &[$C0D3], R8"#
+POP R8"#
         );
 
         let source = "mov &[!var], [$c0d3 + r2 + !var]";
@@ -1418,10 +1418,10 @@ PSH R6
 MOV R6, !var
 ADD R7, R6
 ADD R8, R7
+MOV &[!var], R8
 POP R6
 POP R7
-POP R8
-MOV &[!var], R8"#
+POP R8"#
         );
 
         let source = "mov &[r2], &[r3]";

@@ -33,6 +33,7 @@ pub enum Register {
     R8,
     SP,
     FP,
+    IM,
 }
 
 impl fmt::Display for Register {
@@ -50,13 +51,14 @@ impl fmt::Display for Register {
             Register::R8 => std::fmt::Display::fmt("R8", f),
             Register::SP => std::fmt::Display::fmt("SP", f),
             Register::FP => std::fmt::Display::fmt("FP", f),
+            Register::IM => std::fmt::Display::fmt("IM", f),
         }
     }
 }
 
 impl Register {
     pub const fn len() -> usize {
-        12
+        13
     }
 
     pub const fn is_empty() -> bool {
@@ -77,6 +79,7 @@ impl Register {
             Register::R8,
             Register::SP,
             Register::FP,
+            Register::IM,
         ]
         .into_iter()
     }
@@ -123,6 +126,10 @@ impl TryFrom<u16> for Register {
                 "access to register {} is forbidden",
                 Register::FP
             ))),
+            13 => Err(Error::ForbiddenRegister(format!(
+                "access to register {} is forbidden",
+                Register::IM
+            ))),
             v => Err(Error::InvalidRegister(format!(
                 "value 0x{v:04X} is not a valid register number"
             ))),
@@ -143,30 +150,19 @@ impl TryFrom<&str> for Register {
 
     fn try_from(value: &str) -> Result<Self> {
         match value {
-            "acc" => Ok(Self::Acc),
-            "ip" => Ok(Self::IP),
-            "r1" => Ok(Self::R1),
-            "r2" => Ok(Self::R2),
-            "r3" => Ok(Self::R3),
-            "r4" => Ok(Self::R4),
-            "r5" => Ok(Self::R5),
-            "r6" => Ok(Self::R6),
-            "r7" => Ok(Self::R7),
-            "r8" => Ok(Self::R8),
-            "sp" => Ok(Self::SP),
-            "fp" => Ok(Self::FP),
-            "ACC" => Ok(Self::Acc),
-            "IP" => Ok(Self::IP),
-            "R1" => Ok(Self::R1),
-            "R2" => Ok(Self::R2),
-            "R3" => Ok(Self::R3),
-            "R4" => Ok(Self::R4),
-            "R5" => Ok(Self::R5),
-            "R6" => Ok(Self::R6),
-            "R7" => Ok(Self::R7),
-            "R8" => Ok(Self::R8),
-            "SP" => Ok(Self::SP),
-            "FP" => Ok(Self::FP),
+            "acc" | "ACC" => Ok(Self::Acc),
+            "ip" | "IP" => Ok(Self::IP),
+            "r1" | "R1" => Ok(Self::R1),
+            "r2" | "R2" => Ok(Self::R2),
+            "r3" | "R3" => Ok(Self::R3),
+            "r4" | "R4" => Ok(Self::R4),
+            "r5" | "R5" => Ok(Self::R5),
+            "r6" | "R6" => Ok(Self::R6),
+            "r7" | "R7" => Ok(Self::R7),
+            "r8" | "R8" => Ok(Self::R8),
+            "sp" | "SP" => Ok(Self::SP),
+            "fp" | "FP" => Ok(Self::FP),
+            "im" | "IM" => Ok(Self::IM),
             _ => Err(Error::InvalidRegister(format!(
                 "value '{value}' is not a valid register name"
             ))),
@@ -188,6 +184,7 @@ impl Registers {
         registers.inner[Register::FP as usize] = u16::from(stack_address) - 2;
         registers.inner[Register::SP as usize] = u16::from(stack_address) - 2;
         registers.inner[Register::IP as usize] = start_address.into().into();
+        registers.inner[Register::IM as usize] = 0xffff;
         registers
     }
 

@@ -7,7 +7,11 @@ members = [
     "aya-packer",
     "aya-assembly",
 ]
-default-members = ["aya-console", "aya-debugger", "aya-packer"]
+default-members = [
+    "aya-console",
+    "aya-debugger",
+    "aya-packer"
+]
 resolver = "2"
 
 [workspace.dependencies]

@@ -1,0 +1,12 @@
+---
+source: aya-assembly/src/parser/instructions/rti.rs
+expression: result
+---
+Instruction(
+    Rti(
+        ByteOffset {
+            start: 0,
+            end: 3,
+        },
+    ),
+)

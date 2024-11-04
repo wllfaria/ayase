@@ -52,6 +52,8 @@ impl std::fmt::Display for Token {
             Kind::Call => write!(f, "CALL"),
             Kind::Ret => write!(f, "RET"),
             Kind::Hlt => write!(f, "HLT"),
+            Kind::Int => write!(f, "INT"),
+            Kind::Rti => write!(f, "RTI"),
             Kind::Plus => write!(f, "PLUS"),
             Kind::Minus => write!(f, "MINUS"),
             Kind::Star => write!(f, "STAR"),
@@ -107,6 +109,8 @@ pub enum Kind {
     Call,
     Ret,
     Hlt,
+    Int,
+    Rti,
 
     Plus,
     Minus,
@@ -164,6 +168,8 @@ impl Kind {
             | Kind::Pop
             | Kind::Call
             | Kind::Ret
+            | Kind::Int
+            | Kind::Rti
             | Kind::Hlt => true,
         }
     }
@@ -214,6 +220,8 @@ impl Kind {
             | Kind::Pop
             | Kind::Call
             | Kind::Ret
+            | Kind::Rti
+            | Kind::Int
             | Kind::Hlt => true,
         }
     }
@@ -340,6 +348,14 @@ impl Token {
             "hlt" => Token {
                 offset: (start..end).into(),
                 kind: Kind::Hlt,
+            },
+            "int" => Token {
+                offset: (start..end).into(),
+                kind: Kind::Int,
+            },
+            "rti" => Token {
+                offset: (start..end).into(),
+                kind: Kind::Rti,
             },
             _ => Token {
                 offset: (start..end).into(),

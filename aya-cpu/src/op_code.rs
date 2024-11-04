@@ -82,5 +82,7 @@ op_codes! {
     JltLit          = 0x5c,
     Jmp             = 0x5d,
 
+    Int             = 0xfd,
+    Rti             = 0xfe,
     Halt            = 0xff,
 }

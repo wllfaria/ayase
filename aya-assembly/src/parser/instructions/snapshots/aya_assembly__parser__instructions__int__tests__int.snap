@@ -1,0 +1,14 @@
+---
+source: aya-assembly/src/parser/instructions/int.rs
+expression: result
+---
+Instruction(
+    Int(
+        HexLiteral(
+            ByteOffset {
+                start: 5,
+                end: 7,
+            },
+        ),
+    ),
+)

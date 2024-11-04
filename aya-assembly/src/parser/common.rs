@@ -57,8 +57,8 @@ pub fn parse_identifier<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, me
 pub fn parse_register<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<ByteOffset> {
     let offset = parse_identifier(source.as_ref(), lexer, "", "")?;
     let name = &source.as_ref()[Range::<usize>::from(offset)];
-    match name {
-        "acc" | "ip" | "r1" | "r2" | "r3" | "r4" | "r5" | "r6" | "r7" | "r8" | "sp" | "fp" => Ok(offset),
+    match name.to_lowercase().as_str() {
+        "acc" | "ip" | "r1" | "r2" | "r3" | "r4" | "r5" | "r6" | "r7" | "r8" | "sp" | "fp" | "im" => Ok(offset),
         _ => unexpected_token(source.as_ref(), &Token::from_ident(name, offset.start, offset.end)),
     }
 }

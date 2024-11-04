@@ -16,10 +16,12 @@ pub struct Cpu<A: Addressable> {
     pub registers: Registers,
     pub memory: A,
     start_address: Word,
+    in_interrupt: bool,
+    interrupt_table: Word,
 }
 
 impl<A: Addressable> Cpu<A> {
-    pub fn new<W>(memory: A, start_address: W, stack_address: W) -> Self
+    pub fn new<W>(memory: A, start_address: W, stack_address: W, interrupt_table: W) -> Self
     where
         W: Into<Word> + Copy,
     {
@@ -27,6 +29,8 @@ impl<A: Addressable> Cpu<A> {
             registers: Registers::new(start_address, stack_address),
             memory,
             start_address: start_address.into(),
+            in_interrupt: false,
+            interrupt_table: interrupt_table.into(),
         }
     }
 
@@ -315,6 +319,11 @@ impl<A: Addressable> Cpu<A> {
                 let jump_to = self.next_instruction(InstructionSize::Word)?;
                 Ok(Instruction::Jmp(jump_to.into()))
             }
+            OpCode::Int => {
+                let address = self.next_instruction(InstructionSize::Small)?;
+                Ok(Instruction::Int(address))
+            }
+            OpCode::Rti => Ok(Instruction::Rti),
         }
     }
 
@@ -533,34 +542,13 @@ impl<A: Addressable> Cpu<A> {
                 let address = self.registers.fetch(reg);
                 self.call_address(address.into())?;
             }
-            Instruction::Ret => {
-                // when returning from a subroutine, we need to restore registers to same state as
-                // they were before calling this subroutine by:
-                // 1. moving the frame pointer back to the beginning of the previous stack frame
-                // 2. moving the stack pointer to the previous instruction pointer address
-                // 3. restoring the values of the non volatile registers (R1-R4)
-
-                let frame_ptr = self.registers.fetch_word(Register::FP);
-                // we set the stack pointer back to the frame pointer to pop the previous values
-                self.registers.set(Register::SP, frame_ptr.into());
-
-                let frame_size = self.pop_stack()?;
-                let ip = self.pop_stack()?;
-                let r4 = self.pop_stack()?;
-                let r3 = self.pop_stack()?;
-                let r2 = self.pop_stack()?;
-                let r1 = self.pop_stack()?;
-
-                self.registers.set(Register::IP, ip);
-                self.registers.set(Register::R4, r4);
-                self.registers.set(Register::R3, r3);
-                self.registers.set(Register::R2, r2);
-                self.registers.set(Register::R1, r1);
-
-                let prev_frame_ptr = frame_ptr + frame_size.into();
-                self.registers.set(Register::FP, prev_frame_ptr.into());
-            }
+            Instruction::Ret => self.restore_stack()?,
             Instruction::Halt(code) => return Ok(ControlFlow::Halt(code)),
+            Instruction::Int(interrupt) => self.handle_interrupt(interrupt)?,
+            Instruction::Rti => {
+                self.in_interrupt = false;
+                self.restore_stack()?;
+            }
         }
         Ok(ControlFlow::Continue)
     }
@@ -583,6 +571,12 @@ impl<A: Addressable> Cpu<A> {
     }
 
     fn call_address(&mut self, address: Word) -> Result<()> {
+        self.save_stack()?;
+        self.registers.set(Register::IP, address.into());
+        Ok(())
+    }
+
+    fn save_stack(&mut self) -> Result<()> {
         // when calling a subroutine, we need to finish the current stack frame by:
         // 1. pushing the state of every non volatile general purpose register (R1 to R4)
         // 2. pushing the current address of the instruction pointer
@@ -607,7 +601,37 @@ impl<A: Addressable> Cpu<A> {
         self.memory.write_word(stack_ptr, frame_size.into())?;
         self.registers.set(Register::SP, next_frame_start.into());
         self.registers.set(Register::FP, next_frame_start.into());
-        self.registers.set(Register::IP, address.into());
+
+        Ok(())
+    }
+
+    fn restore_stack(&mut self) -> Result<()> {
+        // when returning from a subroutine, we need to restore registers to same state as
+        // they were before calling this subroutine by:
+        // 1. moving the frame pointer back to the beginning of the previous stack frame
+        // 2. moving the stack pointer to the previous instruction pointer address
+        // 3. restoring the values of the non volatile registers (R1-R4)
+
+        let frame_ptr = self.registers.fetch_word(Register::FP);
+        // we set the stack pointer back to the frame pointer to pop the previous values
+        self.registers.set(Register::SP, frame_ptr.into());
+
+        let frame_size = self.pop_stack()?;
+        let ip = self.pop_stack()?;
+        let r4 = self.pop_stack()?;
+        let r3 = self.pop_stack()?;
+        let r2 = self.pop_stack()?;
+        let r1 = self.pop_stack()?;
+
+        self.registers.set(Register::IP, ip);
+        self.registers.set(Register::R4, r4);
+        self.registers.set(Register::R3, r3);
+        self.registers.set(Register::R2, r2);
+        self.registers.set(Register::R1, r1);
+
+        let prev_frame_ptr = frame_ptr + frame_size.into();
+        self.registers.set(Register::FP, prev_frame_ptr.into());
+
         Ok(())
     }
 
@@ -623,6 +647,26 @@ impl<A: Addressable> Cpu<A> {
         let stack_ptr = self.registers.fetch_word(Register::SP);
         self.memory.write_word(stack_ptr, val)?;
         self.registers.set(Register::SP, stack_ptr.prev_word()?.into());
+        Ok(())
+    }
+
+    fn handle_interrupt(&mut self, value: u16) -> Result<()> {
+        let interrupt_idx = value & 0xF;
+        let is_unmasked = (1 << interrupt_idx) & self.registers.fetch(Register::IM);
+        if is_unmasked == 0 {
+            return Ok(());
+        }
+
+        let handler_pointer = self.interrupt_table + (interrupt_idx * 2).into();
+        let address = self.memory.read_word(handler_pointer)?;
+
+        if !self.in_interrupt {
+            self.save_stack()?;
+        }
+
+        self.in_interrupt = true;
+        self.registers.set(Register::IP, address);
+
         Ok(())
     }
 }

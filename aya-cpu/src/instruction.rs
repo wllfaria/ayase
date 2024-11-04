@@ -58,4 +58,6 @@ pub enum Instruction {
     CallRegPtr(Register),
     Ret,
     Halt(u16),
+    Int(u16),
+    Rti,
 }

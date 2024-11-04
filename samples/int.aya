@@ -1,0 +1,20 @@
+before_interrupt:
+  mov r1, $01
+  mov r2, $02
+  psh $0003
+
+call_interrupt:
+  int $03
+
+mask_interrupt_4:
+  mov r3, $01
+  lsh r3, $03
+  not r3
+  and im, acc
+  mov im, acc
+
+call_interrupt_again:
+  int $03
+
+this_should_run_instead:
+  mov r5, $05
