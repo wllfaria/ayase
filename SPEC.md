@@ -40,7 +40,8 @@ Acc - Will store the return value
 | 0x2000 | 0x227F |  640B Memory dedicated to sprite drawing                   |
 | 0x2280 | 0x627F | 16KiB Memory dedicated to program source code              |
 | 0x6280 | 0x667F |  1KiB Memory for background tilemap drawing                |
-| 0x6680 | 0x6a7F |  1KiB Memory for interface tilemap drawing                 |
+| 0x6680 | 0x6A7F |  1KiB Memory for interface tilemap drawing                 |
+| 0x6A80 | 0x6A9F |   32B Memory as interrupt table                            |
 | TODO: Rest of the memory layout                                              |
 | 0xE000 | 0xFFFF | 8KiB stack memory                                          |
 

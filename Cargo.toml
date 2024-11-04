@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "aya-cpu",
-    "aya-debugger",
     "aya-console",
     "aya-bitmap",
     "aya-packer",
@@ -9,14 +8,12 @@ members = [
 ]
 default-members = [
     "aya-console",
-    "aya-debugger",
     "aya-packer"
 ]
 resolver = "2"
 
 [workspace.dependencies]
 aya-cpu = { path = "aya-cpu" }
-aya-debugger = { path = "aya-debugger" }
 aya-assembly = { path = "aya-assembly" }
 aya-console = { path = "aya-console" }
 aya-bitmap = { path = "aya-bitmap" }

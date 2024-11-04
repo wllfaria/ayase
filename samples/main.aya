@@ -1,21 +1,16 @@
-import "../samples/secondary.aya" Secondary &[$1234] {
-  variable: !other,
-  variable_b: $3030,
-  to_add: [Module.to_add]
-}
-
-import "../samples/module.aya" Module &[$1234] { }
-
-const other = $1234
-
 start:
   mov acc, $0000
   mov r8, $6280
   mov r7, $0607
   mov &[$6680], $0302
   mov &[$6682], $0504
-  mov r1, !loop
-  call &[!fill]
+
+fill:
+  jle &[!loop], $0400
+  mov &[r8], r7
+  add r8, $0002
+  add acc, $0002
+  jmp &[!fill]
 
 loop:
   jmp &[!loop]

@@ -72,14 +72,19 @@ pub struct Ast {
 }
 
 impl Ast {
-    pub fn imports(&self) -> impl Iterator<Item = (&ByteOffset, &ByteOffset, &Vec<Statement>, &Statement)> {
+    pub fn imports(&self) -> impl Iterator<Item = (&ByteOffset, &ByteOffset, &Vec<Statement>, &ByteOffset)> {
         self.statements.iter().flat_map(|stat| match stat {
             Statement::Import {
                 name,
                 variables,
                 path,
                 address,
-            } => Some((name, path, variables, address.as_ref())),
+            } => {
+                let Statement::HexLiteral(address) = address.as_ref() else {
+                    unreachable!();
+                };
+                Some((name, path, variables, address))
+            }
             _ => None,
         })
     }

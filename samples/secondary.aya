@@ -1,7 +1,0 @@
-+fill:
-  jle &[r1], $0400
-  mov &[r8], r7
-  add r8, !to_add
-  add acc, !to_add
-  jmp &[!fill]
-  ret

@@ -25,6 +25,7 @@ impl Either {
 pub struct ResolvedModule {
     pub name: String,
     pub path: PathBuf,
+    pub address: u16,
     pub imports: Vec<PathBuf>,
     pub symbols: HashMap<String, u16>,
     pub variables: Option<HashMap<String, Either>>,
@@ -78,7 +79,7 @@ pub fn resolve<P: AsRef<Path>>(code: String, path: P) -> miette::Result<Resolved
         sources: HashMap::default(),
     };
 
-    resolve_module("main", path.clone(), code, None, &mut context)?;
+    resolve_module("main", path.clone(), code, None, &mut context, 0)?;
 
     let mut sorted = topological_sort(&context.modules);
 
@@ -215,6 +216,7 @@ fn resolve_module(
     code: String,
     variables: Option<HashMap<String, Either>>,
     context: &mut Context,
+    address: u16,
 ) -> miette::Result<()> {
     if context.visited.contains(&path) {
         return Ok(());
@@ -227,6 +229,7 @@ fn resolve_module(
         name: name.to_string(),
         path: path.clone(),
         variables,
+        address,
         symbols: Default::default(),
         imports: Default::default(),
     };
@@ -270,12 +273,14 @@ fn resolve_constants(code: &str, module: &mut ResolvedModule, ast: &Ast) -> miet
 }
 
 fn resolve_imports(code: &str, module: &mut ResolvedModule, ast: &Ast, context: &mut Context) -> miette::Result<()> {
-    for (name, path, variables, _) in ast.imports() {
+    for (name, path, variables, address) in ast.imports() {
         let variables = resolve_import_vars(code, module, variables)?;
         let name = &code[name.start..name.end];
         let path = &code[path.start..path.end];
         let code = crate::file::load_module_from_path(path).unwrap();
-        resolve_module(name, path.into(), code, Some(variables), context)?;
+        let address = &code[Range::from(*address)];
+        let address = u16::from_str_radix(address, 16).unwrap();
+        resolve_module(name, path.into(), code, Some(variables), context, address)?;
         module.imports.push(path.into());
     }
     Ok(())

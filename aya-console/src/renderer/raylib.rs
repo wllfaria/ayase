@@ -12,8 +12,8 @@ use raylib::{RaylibHandle, RaylibThread};
 use super::error::Result;
 use super::Renderer;
 
-const TILES_WIDTH: u16 = 12;
-const TILES_HEIGHT: u16 = 12;
+const TILES_WIDTH: u16 = 30;
+const TILES_HEIGHT: u16 = 14;
 const BYTES_PER_TILE: u16 = 32;
 const SPRITE_WIDTH: u16 = 8;
 
@@ -26,8 +26,8 @@ pub struct RaylibRenderer {
     frame_duration: Duration,
 }
 
-impl RaylibRenderer {
-    pub fn new(fps: f64, scale: u16) -> Self {
+impl Renderer for RaylibRenderer {
+    fn start(fps: f64, scale: u16) -> Self {
         let (handle, thread) = raylib::init()
             .size(
                 TILES_WIDTH as i32 * SPRITE_WIDTH as i32 * scale as i32,
@@ -48,9 +48,7 @@ impl RaylibRenderer {
             frame_duration,
         }
     }
-}
 
-impl Renderer for RaylibRenderer {
     fn should_close(&self) -> bool {
         self.handle.window_should_close()
     }

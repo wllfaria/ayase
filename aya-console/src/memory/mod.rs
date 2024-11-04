@@ -30,3 +30,4 @@ pub const CODE_MEM_LOC: (u16, u16) = (0x2280, 0x627F);
 pub const BG_MEM_LOC: (u16, u16) = (0x6280, 0x667F);
 pub const UI_MEM_LOC: (u16, u16) = (0x6680, 0x6A7F);
 pub const STACK_MEM_LOC: (u16, u16) = (0xE000, 0xFFFF);
+pub const INTERRUPT_TABLE: u16 = 0x6A80;

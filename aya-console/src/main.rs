@@ -4,7 +4,7 @@ mod rom_loader;
 use aya_console::memory::memory_mapper::{MappingMode, MemoryMapper};
 use aya_console::memory::{
     BackgroundMemory, InterfaceMemory, ProgramMemory, SpriteMemory, StackMemory, TileMemory, BG_MEM_LOC, CODE_MEM_LOC,
-    SPRITE_MEM_LOC, STACK_MEM_LOC, TILE_MEM_LOC, UI_MEM_LOC,
+    INTERRUPT_TABLE, SPRITE_MEM_LOC, STACK_MEM_LOC, TILE_MEM_LOC, UI_MEM_LOC,
 };
 use aya_cpu::cpu::{ControlFlow, Cpu};
 use aya_cpu::memory::Addressable;
@@ -16,12 +16,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rom_file = rom_loader::load_from_file(&rom_file);
 
     let memory = setup_memory(&rom_file);
-    let mut cpu = Cpu::new(memory, CODE_MEM_LOC.0, STACK_MEM_LOC.1, 0x1000);
+    let mut cpu = Cpu::new(memory, CODE_MEM_LOC.0, STACK_MEM_LOC.1, INTERRUPT_TABLE);
     cpu.load_into_address(rom_file.code, CODE_MEM_LOC.0).unwrap();
 
     let fps = 60.0;
-    let scale = 8;
-    let mut renderer = RaylibRenderer::new(fps, scale);
+    let scale = 6;
+    let mut renderer = RaylibRenderer::start(fps, scale);
     while !renderer.should_close() {
         if let ControlFlow::Halt(_) = cpu.step()? {
             return Ok(());
