@@ -3,7 +3,7 @@ source: aya-assembly/src/parser/instructions/call.rs
 expression: result
 ---
 Instruction(
-    CallLit(
+    Call(
         Address(
             BinaryOp {
                 lhs: HexLiteral(

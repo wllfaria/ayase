@@ -27,9 +27,9 @@ impl TryFrom<Token> for Operator {
 impl std::fmt::Display for Operator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Operator::Add => write!(f, "add"),
-            Operator::Sub => write!(f, "sub"),
-            Operator::Mul => write!(f, "mul"),
+            Operator::Add => write!(f, "ADD"),
+            Operator::Sub => write!(f, "SUB"),
+            Operator::Mul => write!(f, "MUL"),
         }
     }
 }
@@ -244,7 +244,7 @@ pub enum Instruction {
     PshLit(Statement),
     PshReg(Statement),
     Pop(Statement),
-    CallLit(Statement),
+    Call(Statement),
     Ret(ByteOffset),
     Hlt(ByteOffset),
 }
@@ -289,7 +289,7 @@ impl Instruction {
             | Instruction::PshLit(lhs)
             | Instruction::PshReg(lhs)
             | Instruction::Pop(lhs)
-            | Instruction::CallLit(lhs)
+            | Instruction::Call(lhs)
             | Instruction::Inc(lhs)
             | Instruction::Dec(lhs)
             | Instruction::Jmp(lhs)
@@ -339,7 +339,7 @@ impl Instruction {
             Instruction::PshLit(_)
             | Instruction::PshReg(_)
             | Instruction::Pop(_)
-            | Instruction::CallLit(_)
+            | Instruction::Call(_)
             | Instruction::Inc(_)
             | Instruction::Dec(_)
             | Instruction::Not(_)
@@ -382,7 +382,7 @@ impl Instruction {
             Instruction::PshLit(_) => OpCode::PushLit,
             Instruction::PshReg(_) => OpCode::PushReg,
             Instruction::Pop(_) => OpCode::Pop,
-            Instruction::CallLit(_) => OpCode::Call,
+            Instruction::Call(_) => OpCode::Call,
             Instruction::Ret(_) => OpCode::Ret,
             Instruction::Hlt(_) => OpCode::Halt,
 
@@ -448,7 +448,7 @@ impl Instruction {
 
             Instruction::MovMemReg(_, _) => InstructionKind::MemReg,
             Instruction::MovRegPtrReg(_, _) => InstructionKind::RegPtrReg,
-            Instruction::PshLit(_) | Instruction::CallLit(_) | Instruction::Jmp(_) => InstructionKind::SingleLit,
+            Instruction::PshLit(_) | Instruction::Call(_) | Instruction::Jmp(_) => InstructionKind::SingleLit,
             Instruction::Ret(_) | Instruction::Hlt(_) => InstructionKind::NoArgs,
         }
     }
@@ -500,7 +500,7 @@ impl Instruction {
             Instruction::PshLit(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
             Instruction::PshReg(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
             Instruction::Pop(stat) => (stat.offset().start - NORMAL..stat.offset().end).into(),
-            Instruction::CallLit(stat) => (stat.offset().start - BIG..stat.offset().end).into(),
+            Instruction::Call(stat) => (stat.offset().start - BIG..stat.offset().end).into(),
             Instruction::Ret(offset) => *offset,
             Instruction::Hlt(offset) => *offset,
         }

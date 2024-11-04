@@ -5,10 +5,10 @@ expression: result
 Instruction(
     Call(
         Address(
-            HexLiteral(
+            Var(
                 ByteOffset {
                     start: 8,
-                    end: 12,
+                    end: 11,
                 },
             ),
         ),

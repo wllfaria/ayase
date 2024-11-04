@@ -29,8 +29,8 @@ pub fn parse_call<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Stateme
     };
 
     match kind {
-        Kind::HexNumber => Ok(Instruction::CallLit(value).into()),
-        Kind::Ampersand => Ok(Instruction::CallLit(value).into()),
+        Kind::HexNumber => Ok(Instruction::Call(value).into()),
+        Kind::Ampersand => Ok(Instruction::Call(value).into()),
         _ => unreachable!(),
     }
 }
@@ -61,6 +61,13 @@ mod tests {
     #[test]
     fn test_call_address_expr_var() {
         let input = "call &[!var + r2]";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_call_address_var() {
+        let input = "call &[!var]";
         let result = run_instruction(input);
         insta::assert_debug_snapshot!(result);
     }

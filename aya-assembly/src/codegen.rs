@@ -39,7 +39,7 @@ enum InstructionPrefix {
     Inc,
     Dec,
     Lsh,
-    Rhs,
+    Rsh,
     And,
     Or,
     Xor,
@@ -68,7 +68,7 @@ impl std::fmt::Display for InstructionPrefix {
             InstructionPrefix::Inc => write!(f, "INC"),
             InstructionPrefix::Dec => write!(f, "DEC"),
             InstructionPrefix::Lsh => write!(f, "LSH"),
-            InstructionPrefix::Rhs => write!(f, "RHS"),
+            InstructionPrefix::Rsh => write!(f, "RSH"),
             InstructionPrefix::And => write!(f, "AND"),
             InstructionPrefix::Or => write!(f, "OR"),
             InstructionPrefix::Xor => write!(f, "XOR"),
@@ -179,21 +179,28 @@ impl<'codegen> CodeGenerator<'codegen> {
             Statement::Register(reg) => {
                 let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
                 let reg = &self.source[Range::from(*reg)];
+                let reg = match Register::try_from(reg) {
+                    Ok(reg) => reg,
+                    Err(_) => return Err(bail(self.source, REGISTER_HELP, REGISTER_MSG, node.offset())),
+                };
                 self.code.push(formatted!(prefix, dest, reg));
+                Ok(dest)
+            }
+            Statement::Var(var) => {
+                let dest = target.unwrap_or_else(|| self.get_temp_register().unwrap());
+                let var = var.get_source(&self.source);
+                self.code.push(formatted!(prefix, dest, "!{var}"));
                 Ok(dest)
             }
             Statement::BinaryOp { lhs, operator, rhs } => {
                 let lhs = self.generate_code(InstructionPrefix::Mov, lhs, None)?;
                 let rhs = self.generate_code(InstructionPrefix::Mov, rhs, None)?;
+                self.code.push(formatted!(operator, lhs, rhs));
 
-                // Determine the target register
                 let dest = target.unwrap_or(lhs);
-                // If dest is not lhs, move lhs to dest
                 if dest != lhs {
-                    let prefix = InstructionPrefix::Mov;
                     self.code.push(formatted!(prefix, dest, lhs));
                 }
-                self.code.push(formatted!(operator, dest, rhs));
 
                 if !self.used_registers.contains(&rhs) {
                     self.release_temp_register(rhs);
@@ -264,7 +271,7 @@ impl<'codegen> CodeGenerator<'codegen> {
     }
 
     fn evaluate_constants(&self, node: &Statement) -> miette::Result<Option<String>> {
-        if let Statement::HexLiteral(value) = node {
+        if let Statement::HexLiteral(_) = node {
             return Ok(Some(self.gen_hex_lit(node)?));
         };
 
@@ -371,6 +378,12 @@ impl<'codegen> CodeGenerator<'codegen> {
 
     fn gen_instruction(&mut self, instruction: &Instruction) -> miette::Result<()> {
         match instruction {
+            Instruction::MovRegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
+            }
             Instruction::MovLitReg(lhs, rhs) => {
                 let prefix = InstructionPrefix::Mov;
                 let lhs = self.get_register(lhs)?;
@@ -384,98 +397,674 @@ impl<'codegen> CodeGenerator<'codegen> {
                 self.generate_code(prefix, rhs, Some(lhs))?;
                 self.release_all_temp_registers();
             }
-            Instruction::MovRegReg(lhs, rhs) => {
-                let prefix = InstructionPrefix::Mov;
-                let lhs = lhs.offset().get_source(&self.source);
-                let rhs = rhs.offset().get_source(&self.source);
-                self.code.push(formatted!(prefix, lhs, rhs));
-            }
             Instruction::MovRegMem(lhs, rhs) => {
                 let prefix = InstructionPrefix::Mov;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
                 let lhs = self.get_address(lhs)?;
-                let rhs = rhs.offset().get_source(&self.source);
+                let rhs = self.get_register(rhs)?;
                 self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
             }
-            Instruction::MovMemReg(_, _) => todo!(),
-            Instruction::MovLitMem(lhs, rhs) => {}
-            Instruction::MovRegPtrReg(_, _) => todo!(),
+            Instruction::MovMemReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov;
+                let lhs = self.get_register(lhs)?;
+
+                let Statement::Address(inner) = rhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        rhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let rhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    self.code.push(formatted!(prefix, lhs, "&[{rhs}]"));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let rhs = self.get_address(rhs)?;
+                self.code.push(formatted!(prefix, lhs, "&[{rhs}]"));
+            }
+            Instruction::MovLitMem(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                let rhs = self.generate_code(InstructionPrefix::Mov, rhs, None)?;
+                self.release_all_temp_registers();
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::MovRegPtrReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov;
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_address(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", "&[{rhs}]"));
+            }
+            Instruction::Inc(reg) => {
+                let prefix = InstructionPrefix::Inc;
+                let reg = self.get_register(reg)?;
+                self.code.push(formatted!(prefix, reg));
+            }
+            Instruction::Dec(reg) => {
+                let prefix = InstructionPrefix::Dec;
+                let reg = self.get_register(reg)?;
+                self.code.push(formatted!(prefix, reg));
+            }
             Instruction::AddRegReg(lhs, rhs) => {
-                let prefix = InstructionPrefix::Sub;
-                let lhs = lhs.offset().get_source(&self.source);
-                let rhs = rhs.offset().get_source(&self.source);
+                let prefix = InstructionPrefix::Add;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
                 self.code.push(formatted!(prefix, lhs, rhs));
             }
             Instruction::AddLitReg(lhs, rhs) => {
                 let prefix = InstructionPrefix::Add;
                 let lhs = self.get_register(lhs)?;
-                let rhs = self.generate_code(InstructionPrefix::Mov, rhs, None)?;
-                self.code.push(formatted!(prefix, lhs, rhs));
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
                 self.release_all_temp_registers();
             }
             Instruction::SubRegReg(lhs, rhs) => {
                 let prefix = InstructionPrefix::Sub;
-                let lhs = lhs.offset().get_source(&self.source);
-                let rhs = rhs.offset().get_source(&self.source);
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
                 self.code.push(formatted!(prefix, lhs, rhs));
             }
-            Instruction::SubLitReg(_, _) => todo!(),
-            Instruction::MulRegReg(_, _) => todo!(),
-            Instruction::MulLitReg(_, _) => todo!(),
-            Instruction::LshRegReg(_, _) => todo!(),
-            Instruction::LshLitReg(_, _) => todo!(),
-            Instruction::RshRegReg(_, _) => todo!(),
-            Instruction::RshLitReg(_, _) => todo!(),
-            Instruction::AndRegReg(_, _) => todo!(),
-            Instruction::AndLitReg(_, _) => todo!(),
-            Instruction::OrLitReg(_, _) => todo!(),
-            Instruction::OrRegReg(_, _) => todo!(),
-            Instruction::XorLitReg(_, _) => todo!(),
-            Instruction::XorRegReg(_, _) => todo!(),
-            Instruction::Inc(_) => todo!(),
-            Instruction::Dec(_) => todo!(),
-            Instruction::Not(_) => todo!(),
-            Instruction::JeqLit(_, _) => todo!(),
-            Instruction::JeqReg(_, _) => todo!(),
-            Instruction::JgtLit(_, _) => todo!(),
-            Instruction::JgtReg(_, _) => todo!(),
-            Instruction::JneLit(_, _) => todo!(),
-            Instruction::JneReg(_, _) => todo!(),
-            Instruction::JgeLit(_, _) => todo!(),
-            Instruction::JgeReg(_, _) => todo!(),
-            Instruction::JleLit(lhs, rhs) => {
-                let prefix = InstructionPrefix::Jle;
-                let lhs = self.get_address(lhs)?;
-                let dest = self.generate_code(InstructionPrefix::Mov, rhs, None)?;
-                self.code.push(formatted!(prefix, "&[{lhs}]", dest));
+            Instruction::SubLitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Sub;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
                 self.release_all_temp_registers();
             }
-            Instruction::JleReg(_, _) => todo!(),
-            Instruction::JltLit(_, _) => todo!(),
-            Instruction::JltReg(_, _) => todo!(),
-            Instruction::Jmp(address) => {
-                let prefix = InstructionPrefix::Jmp;
-                let address = self.get_address(address)?;
-                self.code.push(formatted!(prefix, "&[{address}]"));
+            Instruction::MulRegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mul;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
             }
-            Instruction::PshLit(_) => todo!(),
+            Instruction::MulLitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mul;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
+                self.release_all_temp_registers();
+            }
+            Instruction::LshRegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Lsh;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
+            }
+            Instruction::LshLitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Lsh;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
+                self.release_all_temp_registers();
+            }
+            Instruction::RshRegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Rsh;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
+            }
+            Instruction::RshLitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Rsh;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
+                self.release_all_temp_registers();
+            }
+            Instruction::AndRegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::And;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
+            }
+            Instruction::AndLitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::And;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
+                self.release_all_temp_registers();
+            }
+            Instruction::OrRegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Or;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
+            }
+            Instruction::OrLitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Or;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
+                self.release_all_temp_registers();
+            }
+            Instruction::XorRegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Xor;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
+            }
+            Instruction::XorLitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Xor;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
+                self.release_all_temp_registers();
+            }
+            Instruction::Not(reg) => {
+                let prefix = InstructionPrefix::Not;
+                let reg = self.get_register(reg)?;
+                self.code.push(formatted!(prefix, reg));
+            }
             Instruction::PshReg(reg) => {
                 let prefix = InstructionPrefix::Psh;
                 let reg = self.get_register(reg)?;
                 self.code.push(formatted!(prefix, reg));
             }
-            Instruction::Pop(reg) => {
-                let prefix = InstructionPrefix::Pop;
-                let reg = reg.offset().get_source(&self.source);
-                self.code.push(formatted!(prefix, reg));
-            }
-            Instruction::CallLit(lit) => {
-                let prefix = InstructionPrefix::Call;
-                let dest = self.generate_code(InstructionPrefix::Mov, lit, None)?;
-                self.code.push(formatted!(prefix, dest));
+            Instruction::PshLit(lit) => {
+                let prefix = InstructionPrefix::Psh;
+
+                if let Statement::Var(offset) = lit {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = lit {
+                    let hex = self.gen_hex_lit(lit)?;
+                    self.code.push(formatted!(prefix, hex));
+                    return Ok(());
+                };
+
+                let result = self.generate_code(prefix, lit, None)?;
+                self.code.push(formatted!(prefix, result));
                 self.release_all_temp_registers();
             }
-            Instruction::Ret(_) => self.code.push("ret".to_string()),
-            Instruction::Hlt(_) => self.code.push("hlt".to_string()),
+            Instruction::Pop(reg) => {
+                let prefix = InstructionPrefix::Pop;
+                let reg = self.get_register(reg)?;
+                self.code.push(formatted!(prefix, reg));
+            }
+            Instruction::Call(address) => {
+                let prefix = InstructionPrefix::Call;
+
+                let Statement::Address(inner) = address else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        address.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let rhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    self.code.push(formatted!(prefix, "&[{rhs}]"));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let rhs = self.get_address(address)?;
+                self.code.push(formatted!(prefix, "&[{rhs}]"));
+            }
+            Instruction::Ret(_) => {
+                let prefix = InstructionPrefix::Ret;
+                self.code.push(prefix.to_string());
+            }
+            Instruction::JeqReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jeq;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::JeqLit(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jeq;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = rhs {
+                    let hex = self.gen_hex_lit(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                    return Ok(());
+                };
+
+                let rhs = self.generate_code(prefix, rhs, None)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                self.release_all_temp_registers();
+            }
+            Instruction::JgtReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jgt;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::JgtLit(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jgt;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = rhs {
+                    let hex = self.gen_hex_lit(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                    return Ok(());
+                };
+
+                let rhs = self.generate_code(prefix, rhs, None)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                self.release_all_temp_registers();
+            }
+            Instruction::JneReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jne;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::JneLit(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jne;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = rhs {
+                    let hex = self.gen_hex_lit(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                    return Ok(());
+                };
+
+                let rhs = self.generate_code(prefix, rhs, None)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                self.release_all_temp_registers();
+            }
+            Instruction::JgeReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jge;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::JgeLit(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jge;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = rhs {
+                    let hex = self.gen_hex_lit(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                    return Ok(());
+                };
+
+                let rhs = self.generate_code(prefix, rhs, None)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                self.release_all_temp_registers();
+            }
+            Instruction::JleReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jle;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::JltLit(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jlt;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = rhs {
+                    let hex = self.gen_hex_lit(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                    return Ok(());
+                };
+
+                let rhs = self.generate_code(prefix, rhs, None)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                self.release_all_temp_registers();
+            }
+            Instruction::JltReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jlt;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::JleLit(lhs, rhs) => {
+                let prefix = InstructionPrefix::Jle;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    return Ok(());
+                }
+
+                if let Statement::HexLiteral(_) = rhs {
+                    let hex = self.gen_hex_lit(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                    return Ok(());
+                };
+
+                let rhs = self.generate_code(prefix, rhs, None)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                self.release_all_temp_registers();
+            }
+            Instruction::Jmp(address) => {
+                let prefix = InstructionPrefix::Jmp;
+
+                let Statement::Address(inner) = address else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        address.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov, inner.as_ref(), None)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]"));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                };
+
+                let address = self.get_address(address)?;
+                self.code.push(formatted!(prefix, "&[{address}]"));
+                self.release_all_temp_registers();
+            }
+            Instruction::Hlt(_) => {
+                let prefix = InstructionPrefix::Hlt;
+                self.code.push(prefix.to_string());
+            }
         };
 
         Ok(())
@@ -573,6 +1162,17 @@ mod tests {
     }
 
     #[test]
+    fn test_gen_mov_reg_reg() {
+        let source = "mov r1, r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV R1, R2");
+    }
+
+    #[test]
     fn test_gen_mov_lit_reg() {
         let source = "mov r1, $c0d3";
         let ast = crate::parser::parse(source).unwrap();
@@ -609,11 +1209,908 @@ mod tests {
             r#"PSH R8
 MOV R8, $C0D3
 PSH R7
-MOV R7, r2
+MOV R7, R2
+ADD R8, R7
 MOV R1, R8
-add R1, R7
 POP R7
 POP R8"#
         );
+    }
+
+    #[test]
+    fn test_gen_mov_reg_mem() {
+        let source = "mov &[$c0d3], r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV &[$C0D3], R2");
+
+        let source = "mov &[!var], r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV &[!var], R2");
+
+        let source = "mov &[$c0d3 + r2], r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+MOV &[R8], R2
+POP R7
+POP R8"#
+        );
+    }
+
+    #[test]
+    fn test_gen_mov_mem_reg() {
+        let source = "mov r2, &[$c0d3]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV R2, &[$C0D3]");
+
+        let source = "mov r2, &[!var]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV R2, &[!var]");
+
+        let source = "mov r2, &[$c0d3 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+MOV R2, &[R8]
+POP R7
+POP R8"#
+        );
+    }
+
+    #[test]
+    fn test_gen_mov_lit_mem() {
+        let source = "mov &[$c0d3], $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+POP R8
+MOV &[$C0D3], R8"#
+        );
+
+        let source = "mov &[!var], $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+POP R8
+MOV &[!var], R8"#
+        );
+
+        let source = "mov &[$c0d3 + r2], $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+PSH R6
+MOV R6, $C0D3
+POP R6
+POP R7
+POP R8
+MOV &[R8], R6"#
+        );
+
+        let source = "mov &[$c0d3], !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV &[$C0D3], !var");
+
+        let source = "mov &[$c0d3], [$c0d3 + r2 + !var]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+PSH R6
+MOV R6, !var
+ADD R7, R6
+ADD R8, R7
+POP R6
+POP R7
+POP R8
+MOV &[$C0D3], R8"#
+        );
+
+        let source = "mov &[!var], [$c0d3 + r2 + !var]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+PSH R6
+MOV R6, !var
+ADD R7, R6
+ADD R8, R7
+POP R6
+POP R7
+POP R8
+MOV &[!var], R8"#
+        );
+
+        let source = "mov &[!var + $c0d3 + r2], [$c0d3 + r2 + !var]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, !var
+PSH R7
+MOV R7, $C0D3
+PSH R6
+MOV R6, R2
+ADD R7, R6
+ADD R8, R7
+PSH R5
+MOV R5, $C0D3
+PSH R4
+MOV R4, R2
+PSH R3
+MOV R3, !var
+ADD R4, R3
+ADD R5, R4
+POP R3
+POP R4
+POP R5
+POP R6
+POP R7
+POP R8
+MOV &[R8], R5"#
+        );
+
+        let source = "mov &[r2], &[r3]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MOV &[r2], &[r3]");
+    }
+
+    #[test]
+    fn test_add_reg_reg() {
+        let source = "add r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "ADD R2, R3");
+    }
+
+    #[test]
+    fn test_add_lit_reg() {
+        let source = "add r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "ADD R2, $C0D3");
+
+        let source = "add r1, [$c0d3 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+ADD R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "add r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "ADD R1, !var");
+    }
+
+    #[test]
+    fn test_sub_reg_reg() {
+        let source = "sub r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "SUB R2, R3");
+    }
+
+    #[test]
+    fn test_sub_lit_reg() {
+        let source = "sub r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "SUB R2, $C0D3");
+
+        let source = "sub r1, [$c0d3 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+SUB R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "sub r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "SUB R1, !var");
+    }
+
+    #[test]
+    fn test_mul_reg_reg() {
+        let source = "mul r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MUL R2, R3");
+    }
+
+    #[test]
+    fn test_mul_lit_reg() {
+        let source = "mul r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MUL R2, $C0D3");
+
+        let source = "mul r1, [$c0d3 * r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+MUL R8, R7
+MUL R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "mul r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "MUL R1, !var");
+    }
+
+    #[test]
+    fn test_gen_inc() {
+        let source = "inc r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "INC R2");
+    }
+
+    #[test]
+    fn test_gen_dec() {
+        let source = "dec r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "DEC R2");
+    }
+
+    #[test]
+    fn test_lsh_reg_reg() {
+        let source = "lsh r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "LSH R2, R3");
+    }
+
+    #[test]
+    fn test_lsh_lit_reg() {
+        let source = "lsh r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "LSH R2, $C0D3");
+
+        let source = "lsh r1, [$c0d3 - r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+SUB R8, R7
+LSH R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "lsh r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "LSH R1, !var");
+    }
+
+    #[test]
+    fn test_rsh_reg_reg() {
+        let source = "rsh r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "RSH R2, R3");
+    }
+
+    #[test]
+    fn test_rsh_lit_reg() {
+        let source = "rsh r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "RSH R2, $C0D3");
+
+        let source = "rsh r1, [$c0d3 - r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+SUB R8, R7
+RSH R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "rsh r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "RSH R1, !var");
+    }
+
+    #[test]
+    fn test_and_reg_reg() {
+        let source = "and r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "AND R2, R3");
+    }
+
+    #[test]
+    fn test_and_lit_reg() {
+        let source = "and r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "AND R2, $C0D3");
+
+        let source = "and r1, [$c0d3 - r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+SUB R8, R7
+AND R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "and r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "AND R1, !var");
+    }
+
+    #[test]
+    fn test_or_reg_reg() {
+        let source = "or r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "OR R2, R3");
+    }
+
+    #[test]
+    fn test_or_lit_reg() {
+        let source = "or r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "OR R2, $C0D3");
+
+        let source = "or r1, [$c0d3 - r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+SUB R8, R7
+OR R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "or r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "OR R1, !var");
+    }
+
+    #[test]
+    fn test_xor_reg_reg() {
+        let source = "xor r2, r3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "XOR R2, R3");
+    }
+
+    #[test]
+    fn test_xor_lit_reg() {
+        let source = "xor r2, $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "XOR R2, $C0D3");
+
+        let source = "xor r1, [$c0d3 - r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+SUB R8, R7
+XOR R1, R8
+POP R7
+POP R8"#
+        );
+
+        let source = "xor r1, !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "XOR R1, !var");
+    }
+
+    #[test]
+    fn test_gen_not() {
+        let source = "not r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "NOT R2");
+    }
+
+    #[test]
+    fn test_push_reg() {
+        let source = "psh r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "PSH R2");
+    }
+
+    #[test]
+    fn test_psh_lit() {
+        let source = "psh $c0d3";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "PSH $C0D3");
+
+        let source = "psh [$c0d3 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+PSH R8
+POP R7
+POP R8"#
+        );
+
+        let source = "psh !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "PSH !var");
+    }
+
+    #[test]
+    fn test_gen_pop() {
+        let source = "pop r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "POP R2");
+    }
+
+    #[test]
+    fn test_gen_call() {
+        let source = "call &[$c0d3]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "CALL &[$C0D3]");
+
+        let source = "call &[$0303 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $0303
+PSH R7
+MOV R7, R2
+ADD R8, R7
+CALL &[R8]
+POP R7
+POP R8"#
+        );
+
+        let source = "call &[!var]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "CALL &[!var]");
+
+        let source = "call &[!var + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, !var
+PSH R7
+MOV R7, R2
+ADD R8, R7
+CALL &[R8]
+POP R7
+POP R8"#
+        );
+    }
+
+    #[test]
+    fn test_ret() {
+        let source = "ret";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "RET");
+    }
+
+    #[test]
+    fn test_jeq_reg() {
+        let source = "jeq &[$c0d3], r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "JEQ &[$C0D3], R2");
+
+        let source = "jeq &[!var], r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "JEQ &[!var], R2");
+
+        let source = "jeq &[$c0d3 + r2], r2";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+JEQ &[R8], R2
+POP R7
+POP R8"#
+        );
+    }
+
+    #[test]
+    fn test_jeq_lit() {
+        let source = "jeq &[$c0d3], $0303";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "JEQ &[$C0D3], $0303");
+
+        let source = "jeq &[$c0d3], !var";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "JEQ &[$C0D3], !var");
+
+        let source = "jeq &[$c0d3], [$0303 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $0303
+PSH R7
+MOV R7, R2
+ADD R8, R7
+JEQ &[$C0D3], R8
+POP R7
+POP R8"#
+        );
+
+        let source = "jeq &[$c0d3 + r2], [$0303 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+PSH R6
+MOV R6, $0303
+PSH R5
+MOV R5, R2
+ADD R6, R5
+JEQ &[R8], R6
+POP R5
+POP R6
+POP R7
+POP R8"#
+        );
+    }
+
+    #[test]
+    fn test_gen_jmp() {
+        let source = "jmp &[$c0d3]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "JMP &[$C0D3]");
+
+        let source = "jmp &[$c0d3 + r2]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(
+            result,
+            r#"PSH R8
+MOV R8, $C0D3
+PSH R7
+MOV R7, R2
+ADD R8, R7
+JMP &[R8]
+POP R7
+POP R8"#
+        );
+
+        let source = "jmp &[!var]";
+        let ast = crate::parser::parse(source).unwrap();
+        let mut generator = CodeGenerator::new(source, &ast);
+
+        generator.generate().unwrap();
+        let result = generator.to_string();
+        assert_eq!(result, "JMP &[!var]");
     }
 }
