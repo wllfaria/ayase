@@ -4,6 +4,7 @@ mod file;
 mod lexer;
 mod mod_resolver;
 mod parser;
+mod utils;
 
 use std::path::Path;
 
@@ -17,6 +18,7 @@ pub enum AssembleBehavior {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum AssembleOutput {
     Bytecode(Vec<u8>),
     Codegen(CodegenModule),

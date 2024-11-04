@@ -10,13 +10,11 @@ Ast {
                 end: 11,
             },
             exported: true,
-            value: Address(
-                HexLiteral(
-                    ByteOffset {
-                        start: 17,
-                        end: 21,
-                    },
-                ),
+            value: HexLiteral(
+                ByteOffset {
+                    start: 15,
+                    end: 19,
+                },
             ),
         },
     ],

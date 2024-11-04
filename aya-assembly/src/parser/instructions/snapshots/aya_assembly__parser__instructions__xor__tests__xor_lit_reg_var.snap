@@ -1,0 +1,20 @@
+---
+source: aya-assembly/src/parser/instructions/xor.rs
+expression: result
+---
+Instruction(
+    XorLitReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+        Var(
+            ByteOffset {
+                start: 9,
+                end: 12,
+            },
+        ),
+    ),
+)

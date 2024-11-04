@@ -6,34 +6,25 @@ Instruction(
     MovRegMem(
         Address(
             BinaryOp {
-                lhs: Register(
+                lhs: HexLiteral(
                     ByteOffset {
-                        start: 6,
-                        end: 8,
+                        start: 7,
+                        end: 11,
                     },
                 ),
                 operator: Add,
-                rhs: BinaryOp {
-                    lhs: Register(
-                        ByteOffset {
-                            start: 11,
-                            end: 13,
-                        },
-                    ),
-                    operator: Add,
-                    rhs: Register(
-                        ByteOffset {
-                            start: 16,
-                            end: 18,
-                        },
-                    ),
-                },
+                rhs: Register(
+                    ByteOffset {
+                        start: 14,
+                        end: 16,
+                    },
+                ),
             },
         ),
         Register(
             ByteOffset {
-                start: 21,
-                end: 23,
+                start: 19,
+                end: 21,
             },
         ),
     ),

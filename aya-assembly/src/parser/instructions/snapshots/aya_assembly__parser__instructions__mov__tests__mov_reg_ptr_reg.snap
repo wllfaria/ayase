@@ -1,0 +1,24 @@
+---
+source: aya-assembly/src/parser/instructions/mov.rs
+expression: result
+---
+Instruction(
+    MovRegPtrReg(
+        Address(
+            Register(
+                ByteOffset {
+                    start: 6,
+                    end: 8,
+                },
+            ),
+        ),
+        Address(
+            Register(
+                ByteOffset {
+                    start: 13,
+                    end: 15,
+                },
+            ),
+        ),
+    ),
+)

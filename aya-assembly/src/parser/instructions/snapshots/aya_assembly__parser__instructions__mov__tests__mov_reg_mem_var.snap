@@ -1,0 +1,22 @@
+---
+source: aya-assembly/src/parser/instructions/mov.rs
+expression: result
+---
+Instruction(
+    MovRegMem(
+        Address(
+            Var(
+                ByteOffset {
+                    start: 7,
+                    end: 10,
+                },
+            ),
+        ),
+        Register(
+            ByteOffset {
+                start: 13,
+                end: 15,
+            },
+        ),
+    ),
+)

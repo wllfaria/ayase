@@ -3,6 +3,7 @@ use std::ops::Range;
 use std::path::{Path, PathBuf};
 
 use crate::parser::ast::{Ast, Statement};
+use crate::utils::{bail, bail_multi};
 
 #[derive(Debug, Clone)]
 pub enum Either {
@@ -296,9 +297,9 @@ fn resolve_import_vars(
         if resolved_variables.contains_key(name_str) {
             return Err(bail(
                 code,
-                variable.offset(),
                 "[DUPLICATE_VARIABLE] this variables was previously defined",
                 "variable names must be unique",
+                variable.offset(),
             ));
         }
 
@@ -309,9 +310,9 @@ fn resolve_import_vars(
                 let Some(value) = module.symbols.get(var) else {
                     return Err(bail(
                         code,
-                        variable.offset(),
                         "[UNDEFINED_VARIABLE] this variables doesn't exist in the current scope",
                         "import variables must reference constants",
+                        variable.offset(),
                     ));
                 };
                 resolved_variables.insert(name_str.into(), Either::ResolvedValue(*value));
@@ -349,27 +350,4 @@ fn resolve_import_vars(
     }
 
     Ok(resolved_variables)
-}
-
-fn bail_multi<S: AsRef<str>>(
-    source: &str,
-    labels: impl IntoIterator<Item = miette::LabeledSpan>,
-    message: S,
-    help: S,
-) -> miette::Error {
-    miette::Error::from(
-        miette::MietteDiagnostic::new(message.as_ref())
-            .with_labels(labels)
-            .with_help(help.as_ref()),
-    )
-    .with_source_code(source.to_string())
-}
-
-fn bail<S: AsRef<str>>(source: &str, span: impl Into<miette::SourceSpan>, message: S, help: S) -> miette::Error {
-    miette::Error::from(
-        miette::MietteDiagnostic::new(message.as_ref())
-            .with_label(miette::LabeledSpan::at(span, "this bit"))
-            .with_help(help.as_ref()),
-    )
-    .with_source_code(source.to_string())
 }

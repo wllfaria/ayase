@@ -1,0 +1,29 @@
+---
+source: aya-assembly/src/parser/instructions/add.rs
+expression: result
+---
+Instruction(
+    AddLitReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+        BinaryOp {
+            lhs: HexLiteral(
+                ByteOffset {
+                    start: 10,
+                    end: 14,
+                },
+            ),
+            operator: Add,
+            rhs: Register(
+                ByteOffset {
+                    start: 17,
+                    end: 19,
+                },
+            ),
+        },
+    ),
+)

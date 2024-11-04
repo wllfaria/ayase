@@ -1,0 +1,25 @@
+---
+source: aya-assembly/src/parser/instructions/jmp.rs
+expression: result
+---
+Instruction(
+    Jmp(
+        Address(
+            BinaryOp {
+                lhs: HexLiteral(
+                    ByteOffset {
+                        start: 7,
+                        end: 11,
+                    },
+                ),
+                operator: Add,
+                rhs: Register(
+                    ByteOffset {
+                        start: 14,
+                        end: 16,
+                    },
+                ),
+            },
+        ),
+    ),
+)

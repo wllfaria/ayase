@@ -1,9 +1,9 @@
 ---
-source: aya-assembly/src/parser/instructions/jmp.rs
+source: aya-assembly/src/parser/instructions/jle.rs
 expression: result
 ---
 Instruction(
-    Jmp(
+    JleLit(
         Address(
             HexLiteral(
                 ByteOffset {
@@ -11,6 +11,12 @@ Instruction(
                     end: 11,
                 },
             ),
+        ),
+        Var(
+            ByteOffset {
+                start: 15,
+                end: 18,
+            },
         ),
     ),
 )

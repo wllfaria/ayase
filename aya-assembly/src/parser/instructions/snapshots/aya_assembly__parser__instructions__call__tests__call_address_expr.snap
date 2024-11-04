@@ -1,0 +1,25 @@
+---
+source: aya-assembly/src/parser/instructions/call.rs
+expression: result
+---
+Instruction(
+    CallLit(
+        Address(
+            BinaryOp {
+                lhs: HexLiteral(
+                    ByteOffset {
+                        start: 8,
+                        end: 12,
+                    },
+                ),
+                operator: Add,
+                rhs: Register(
+                    ByteOffset {
+                        start: 15,
+                        end: 17,
+                    },
+                ),
+            },
+        ),
+    ),
+)

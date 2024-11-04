@@ -49,40 +49,26 @@ Ast {
                         start: 154,
                         end: 164,
                     },
-                    value: Address(
-                        HexLiteral(
-                            ByteOffset {
-                                start: 169,
-                                end: 173,
-                            },
-                        ),
-                    ),
-                },
-                ImportVar {
-                    name: ByteOffset {
-                        start: 192,
-                        end: 202,
-                    },
                     value: FieldAccessor {
                         module: ByteOffset {
-                            start: 205,
-                            end: 217,
+                            start: 167,
+                            end: 179,
                         },
                         field: ByteOffset {
-                            start: 218,
-                            end: 226,
+                            start: 180,
+                            end: 188,
                         },
                     },
                 },
                 ImportVar {
                     name: ByteOffset {
-                        start: 245,
-                        end: 255,
+                        start: 207,
+                        end: 217,
                     },
                     value: Var(
                         ByteOffset {
-                            start: 258,
-                            end: 272,
+                            start: 220,
+                            end: 234,
                         },
                     ),
                 },

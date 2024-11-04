@@ -1,0 +1,23 @@
+---
+source: aya-assembly/src/parser/instructions/psh.rs
+expression: result
+---
+Instruction(
+    PshLit(
+        BinaryOp {
+            lhs: HexLiteral(
+                ByteOffset {
+                    start: 6,
+                    end: 10,
+                },
+            ),
+            operator: Add,
+            rhs: Register(
+                ByteOffset {
+                    start: 13,
+                    end: 15,
+                },
+            ),
+        },
+    ),
+)

@@ -33,11 +33,16 @@ impl std::fmt::Display for Operator {
         }
     }
 }
-
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct ByteOffset {
     pub start: usize,
     pub end: usize,
+}
+
+impl ByteOffset {
+    pub fn get_source<'a, S: AsRef<str> + 'a>(&self, source: &'a S) -> &'a str {
+        &source.as_ref()[Range::from(*self)]
+    }
 }
 
 impl From<ByteOffset> for Range<usize> {

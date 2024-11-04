@@ -1,0 +1,22 @@
+---
+source: aya-assembly/src/parser/instructions/mov.rs
+expression: result
+---
+Instruction(
+    MovLitMem(
+        Address(
+            Var(
+                ByteOffset {
+                    start: 7,
+                    end: 10,
+                },
+            ),
+        ),
+        HexLiteral(
+            ByteOffset {
+                start: 14,
+                end: 18,
+            },
+        ),
+    ),
+)

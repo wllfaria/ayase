@@ -1,19 +1,21 @@
 pub mod ast;
 mod common;
 pub mod error;
+mod expressions;
 mod import;
 mod instructions;
 mod syntax;
 
 use common::expect;
 pub use error::Result;
-use error::{unexpected_eof, unexpected_token, PLUS_MSG};
+use error::PLUS_MSG;
 use import::*;
 use instructions::*;
 use syntax::*;
 
 use crate::lexer::{Kind, Lexer, TransposeRef};
 use crate::parser::ast::{Ast, Statement};
+use crate::utils::{unexpected_eof, unexpected_token};
 
 fn parse_instruction<S: AsRef<str>>(source: S, lexer: &mut Lexer, kind: Kind) -> Result<Statement> {
     match kind {
@@ -141,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_exported_constant() {
-        let input = "+const NAME = &[$0123]";
+        let input = "+const NAME = $0123";
         let result = parse(input).unwrap();
         insta::assert_debug_snapshot!(result);
     }

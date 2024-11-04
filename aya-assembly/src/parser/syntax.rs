@@ -1,11 +1,11 @@
 use super::Result;
 use crate::lexer::{Kind, Lexer, TransposeRef};
 use crate::parser::ast::Statement;
-use crate::parser::common::{expect, expect_fail, parse_hex_lit, parse_identifier, parse_variable};
+use crate::parser::common::{expect, expect_fail, parse_hex_lit, parse_identifier};
 use crate::parser::error::{
-    unexpected_eof, unexpected_token, ADDRESS_HELP, ADDRESS_MSG, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG, IDENT_MSG,
-    LBRACE_MSG, RBRACE_MSG,
+    ADDRESS_HELP, ADDRESS_MSG, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG, IDENT_MSG, LBRACE_MSG, RBRACE_MSG,
 };
+use crate::utils::{unexpected_eof, unexpected_token};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub enum DataSize {
@@ -20,43 +20,6 @@ impl From<DataSize> for u8 {
             DataSize::Word => 16,
         }
     }
-}
-
-pub fn parse_address_ident<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {
-    expect(Kind::Ampersand, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
-    expect(Kind::LBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
-
-    let Ok(Some(token)) = lexer.peek().transpose() else {
-        let Err(err) = lexer.next().transpose() else {
-            return unexpected_eof(source.as_ref(), "unterminated import statement");
-        };
-        return Err(err);
-    };
-
-    let value = match token.kind {
-        Kind::HexNumber => Statement::Address(Box::new(Statement::HexLiteral(parse_hex_lit(
-            source.as_ref(),
-            lexer,
-            help.as_ref(),
-            message.as_ref(),
-        )?))),
-        Kind::Bang => Statement::Address(Box::new(Statement::Var(parse_variable(
-            source.as_ref(),
-            lexer,
-            help.as_ref(),
-            message.as_ref(),
-        )?))),
-        Kind::Ident => Statement::Address(Box::new(Statement::Register(parse_identifier(
-            source.as_ref(),
-            lexer,
-            help.as_ref(),
-            message.as_ref(),
-        )?))),
-        _ => return unexpected_token(source.as_ref(), token),
-    };
-
-    expect(Kind::RBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
-    Ok(value)
 }
 
 pub fn parse_simple_address<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {

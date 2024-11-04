@@ -1,0 +1,22 @@
+---
+source: aya-assembly/src/parser/instructions/jne.rs
+expression: result
+---
+Instruction(
+    JneLit(
+        Address(
+            HexLiteral(
+                ByteOffset {
+                    start: 7,
+                    end: 11,
+                },
+            ),
+        ),
+        Var(
+            ByteOffset {
+                start: 15,
+                end: 18,
+            },
+        ),
+    ),
+)

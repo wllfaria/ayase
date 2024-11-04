@@ -1,6 +1,9 @@
 mod token;
 
 pub use token::{Kind, Token};
+
+use crate::parser::error::{UNTERMINATED_STRING_HELP, UNTERMINATED_STRING_MSG};
+use crate::utils::bail;
 pub type Result<T> = std::result::Result<T, miette::Error>;
 
 pub trait TransposeRef<'a, T, E> {
@@ -87,26 +90,17 @@ impl<'lex> Lexer<'lex> {
         self.advance(end_of_string);
         let next = self.source.chars().nth(0);
         match next {
-            Some('\n') | None => Err(self.bail(
-                "did you forget a closing \"",
-                "unterminated string",
-                start,
-                end_of_string + 1,
+            Some('\n') | None => Err(bail(
+                self.full_source,
+                UNTERMINATED_STRING_HELP,
+                UNTERMINATED_STRING_MSG,
+                start..end_of_string + 1,
             )),
             _ => {
                 self.advance(1);
                 Ok(Token::new(Kind::String, start..start + end_of_string))
             }
         }
-    }
-
-    fn bail(&self, help: &str, message: &str, start: usize, size: usize) -> miette::Error {
-        miette::Error::from(
-            miette::MietteDiagnostic::new(message)
-                .with_labels(vec![miette::LabeledSpan::at(start..start + size, "here")])
-                .with_help(help),
-        )
-        .with_source_code(self.full_source.to_string())
     }
 }
 

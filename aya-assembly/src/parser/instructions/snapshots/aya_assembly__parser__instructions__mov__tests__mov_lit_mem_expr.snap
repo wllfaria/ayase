@@ -3,28 +3,28 @@ source: aya-assembly/src/parser/instructions/mov.rs
 expression: result
 ---
 Instruction(
-    MovMemReg(
-        Register(
-            ByteOffset {
-                start: 4,
-                end: 6,
-            },
-        ),
+    MovLitMem(
         Address(
             BinaryOp {
-                lhs: Register(
+                lhs: HexLiteral(
                     ByteOffset {
-                        start: 10,
-                        end: 12,
+                        start: 7,
+                        end: 11,
                     },
                 ),
                 operator: Add,
-                rhs: HexLiteral(
+                rhs: Register(
                     ByteOffset {
-                        start: 16,
-                        end: 20,
+                        start: 14,
+                        end: 16,
                     },
                 ),
+            },
+        ),
+        HexLiteral(
+            ByteOffset {
+                start: 20,
+                end: 24,
             },
         ),
     ),

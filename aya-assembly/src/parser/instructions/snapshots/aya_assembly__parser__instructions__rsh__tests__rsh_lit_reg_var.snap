@@ -1,0 +1,20 @@
+---
+source: aya-assembly/src/parser/instructions/rsh.rs
+expression: result
+---
+Instruction(
+    RshLitReg(
+        Register(
+            ByteOffset {
+                start: 4,
+                end: 6,
+            },
+        ),
+        Var(
+            ByteOffset {
+                start: 9,
+                end: 12,
+            },
+        ),
+    ),
+)

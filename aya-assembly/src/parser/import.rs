@@ -1,11 +1,12 @@
 use super::common::{expect, parse_hex_lit, parse_identifier, parse_string, parse_variable};
 use super::error::{
-    unexpected_eof, unexpected_token, Result, ADDRESS_HELP, ADDRESS_MSG, COLON_MSG, COMMA_MSG, DOT_MSG, HEX_LIT_HELP,
-    HEX_LIT_MSG, IDENT_MSG, LBRACE_MSG, LBRACKET_MSG, PATH_MSG, RBRACE_MSG, RBRACKET_MSG,
+    Result, ADDRESS_HELP, ADDRESS_MSG, COLON_MSG, COMMA_MSG, DOT_MSG, HEX_LIT_HELP, HEX_LIT_MSG, IDENT_MSG, LBRACE_MSG,
+    LBRACKET_MSG, PATH_MSG, RBRACE_MSG, RBRACKET_MSG,
 };
 use crate::lexer::{Kind, Lexer, TransposeRef};
 use crate::parser::ast::Statement;
 use crate::parser::syntax::parse_simple_address;
+use crate::utils::{unexpected_eof, unexpected_token};
 
 fn parse_field_accessor<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statement> {
     let module = parse_identifier(
@@ -213,9 +214,8 @@ mod tests {
             import "./path.aya" module_name &[$fefe] {
                 variable_a: $C0D3,
                 variable_b: [!other_variable],
-                variable_c: &[$FEFE],
-                variable_d: [other_module.variable],
-                variable_e: !other_variable,
+                variable_c: [other_module.variable],
+                variable_d: !other_variable,
             }
         "#;
         let result = crate::parser::parse(input).unwrap();

@@ -1,0 +1,29 @@
+---
+source: aya-assembly/src/parser/instructions/or.rs
+expression: result
+---
+Instruction(
+    OrLitReg(
+        Register(
+            ByteOffset {
+                start: 3,
+                end: 5,
+            },
+        ),
+        BinaryOp {
+            lhs: HexLiteral(
+                ByteOffset {
+                    start: 9,
+                    end: 13,
+                },
+            ),
+            operator: Add,
+            rhs: Register(
+                ByteOffset {
+                    start: 16,
+                    end: 18,
+                },
+            ),
+        },
+    ),
+)

@@ -1,0 +1,31 @@
+---
+source: aya-assembly/src/parser/instructions/jle.rs
+expression: result
+---
+Instruction(
+    JleReg(
+        Address(
+            BinaryOp {
+                lhs: HexLiteral(
+                    ByteOffset {
+                        start: 7,
+                        end: 11,
+                    },
+                ),
+                operator: Add,
+                rhs: Register(
+                    ByteOffset {
+                        start: 14,
+                        end: 16,
+                    },
+                ),
+            },
+        ),
+        Register(
+            ByteOffset {
+                start: 19,
+                end: 21,
+            },
+        ),
+    ),
+)

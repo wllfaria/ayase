@@ -1,7 +1,8 @@
 use aya_cpu::register::Register;
 
 use crate::codegen::CodegenModule;
-use crate::parser::ast::{Ast, ByteOffset, Instruction, InstructionKind, Statement};
+use crate::parser::ast::{Ast, Instruction, InstructionKind, Statement};
+use crate::utils::bail_multi;
 
 fn encode_literal_or_address(module: &mut CodegenModule, node: &Statement, inst: &Instruction) -> miette::Result<u16> {
     match node {
@@ -63,12 +64,12 @@ fn encode_register(source: &str, value: &Statement) -> miette::Result<u8> {
                 miette::LabeledSpan::at(*name, "this identifier"),
                 miette::LabeledSpan::at(value.offset(), "this statement"),
             ];
-            return Err(bail_multi(
+            Err(bail_multi(
                 source,
                 labels,
                 "[INVALID_STATEMENT]: error while compiling statement",
                 "hex number is not within the u8 range",
-            ));
+            ))
         }
     }
 }
@@ -102,20 +103,6 @@ fn collect_symbols(module: &mut CodegenModule, ast: &Ast, address: &mut u16) {
             _ => {}
         }
     }
-}
-
-fn bail_multi<S: AsRef<str>>(
-    source: &str,
-    labels: impl IntoIterator<Item = miette::LabeledSpan>,
-    message: S,
-    help: S,
-) -> miette::Error {
-    miette::Error::from(
-        miette::MietteDiagnostic::new(message.as_ref())
-            .with_labels(labels)
-            .with_help(help.as_ref()),
-    )
-    .with_source_code(source.to_string())
 }
 
 fn compile_data_block(module: &mut CodegenModule, stat: &Statement, bytecode: &mut Vec<u8>) -> miette::Result<()> {
@@ -258,16 +245,4 @@ pub fn compile(modules: Vec<CodegenModule>) -> miette::Result<Vec<u8>> {
     }
 
     Ok(bytecode)
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::AssembleBehavior;
-
-    #[test]
-    fn test_topological() {
-        let result = crate::assemble("../samples/main.aya", AssembleBehavior::Bytecode).unwrap();
-        println!("{result:?}");
-        panic!();
-    }
 }

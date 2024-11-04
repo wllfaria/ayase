@@ -1,0 +1,22 @@
+---
+source: aya-assembly/src/parser/instructions/jge.rs
+expression: result
+---
+Instruction(
+    JgeLit(
+        Address(
+            HexLiteral(
+                ByteOffset {
+                    start: 7,
+                    end: 11,
+                },
+            ),
+        ),
+        Var(
+            ByteOffset {
+                start: 15,
+                end: 18,
+            },
+        ),
+    ),
+)

@@ -1,38 +1,38 @@
 ---
-source: aya-assembly/src/parser/instructions/mov.rs
+source: aya-assembly/src/parser/instructions/jne.rs
 expression: result
 ---
 Instruction(
-    MovLitMem(
+    JneLit(
         Address(
             BinaryOp {
-                lhs: Register(
+                lhs: HexLiteral(
                     ByteOffset {
-                        start: 6,
-                        end: 8,
+                        start: 7,
+                        end: 11,
                     },
                 ),
                 operator: Add,
                 rhs: Register(
                     ByteOffset {
-                        start: 11,
-                        end: 13,
+                        start: 14,
+                        end: 16,
                     },
                 ),
             },
         ),
         BinaryOp {
-            lhs: Register(
+            lhs: HexLiteral(
                 ByteOffset {
-                    start: 17,
-                    end: 19,
+                    start: 21,
+                    end: 25,
                 },
             ),
             operator: Add,
-            rhs: Var(
+            rhs: Register(
                 ByteOffset {
-                    start: 23,
-                    end: 26,
+                    start: 28,
+                    end: 30,
                 },
             ),
         },

@@ -1,16 +1,18 @@
 use crate::lexer::{Kind, Lexer, TransposeRef};
 use crate::parser::ast::{Instruction, Statement};
-use crate::parser::common::{expect, parse_hex_lit, parse_keyword, parse_register};
+use crate::parser::common::{expect, parse_hex_lit, parse_keyword, parse_register, parse_variable};
 use crate::parser::error::{
-    unexpected_eof, unexpected_token, ADDRESS_HELP, ADDRESS_MSG, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG,
+    ADDRESS_HELP, ADDRESS_MSG, BRACKETED_EXPR_HELP, BRACKETED_EXPR_MSG, COMMA_MSG, HEX_LIT_HELP, HEX_LIT_MSG, VAR_HELP,
+    VAR_MSG,
 };
-use crate::parser::syntax::parse_simple_address;
+use crate::parser::expressions::{parse_address_expr, parse_literal_expr};
 use crate::parser::Result;
+use crate::utils::{unexpected_eof, unexpected_token};
 
 pub fn parse_jge<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statement> {
     parse_keyword(source.as_ref(), lexer, Kind::Jge)?;
 
-    let lhs = parse_simple_address(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?;
+    let lhs = parse_address_expr(source.as_ref(), lexer, ADDRESS_HELP, ADDRESS_MSG)?;
 
     expect(
         Kind::Comma,
@@ -31,12 +33,16 @@ pub fn parse_jge<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
     let rhs = match kind {
         Kind::Ident => Statement::Register(parse_register(source.as_ref(), lexer)?),
         Kind::HexNumber => Statement::HexLiteral(parse_hex_lit(source.as_ref(), lexer, HEX_LIT_HELP, HEX_LIT_MSG)?),
+        Kind::Bang => Statement::Var(parse_variable(source.as_ref(), lexer, VAR_HELP, VAR_MSG)?),
+        Kind::LBracket => parse_literal_expr(source.as_ref(), lexer, BRACKETED_EXPR_HELP, BRACKETED_EXPR_MSG)?,
         _ => return unexpected_token(source.as_ref(), token),
     };
 
     match kind {
         Kind::Ident => Ok(Instruction::JgeReg(lhs, rhs).into()),
         Kind::HexNumber => Ok(Instruction::JgeLit(lhs, rhs).into()),
+        Kind::Bang => Ok(Instruction::JgeLit(lhs, rhs).into()),
+        Kind::LBracket => Ok(Instruction::JgeLit(lhs, rhs).into()),
         _ => unreachable!(),
     }
 }
@@ -58,8 +64,36 @@ mod tests {
     }
 
     #[test]
+    fn test_jge_reg_expr() {
+        let input = "jge &[$c0d3 + r2], r2";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
     fn test_jge_lit() {
         let input = "jge &[$c0d3], $0303";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_jge_lit_var() {
+        let input = "jge &[$c0d3], !var";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_jge_lit_expr() {
+        let input = "jge &[$c0d3], [$0303 + r2]";
+        let result = run_instruction(input);
+        insta::assert_debug_snapshot!(result);
+    }
+
+    #[test]
+    fn test_jge_lit_expr_both() {
+        let input = "jge &[$c0d3 + r2], [$0303 + r2]";
         let result = run_instruction(input);
         insta::assert_debug_snapshot!(result);
     }

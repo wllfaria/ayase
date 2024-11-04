@@ -1,9 +1,19 @@
 use std::ops::Range;
 
-use super::error::{bail, unexpected_eof, unexpected_token};
 use super::Result;
 use crate::lexer::{Kind, Lexer, Token, TransposeRef};
 use crate::parser::ast::ByteOffset;
+use crate::utils::{bail, unexpected_eof, unexpected_token};
+
+pub fn peek<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Token> {
+    let Ok(Some(token)) = lexer.peek().transpose() else {
+        let Err(err) = lexer.next().transpose() else {
+            return unexpected_eof(source.as_ref(), "unterminated mov instruction");
+        };
+        return Err(err);
+    };
+    Ok(*token)
+}
 
 pub fn expect<S: AsRef<str>>(
     expected: Kind,
