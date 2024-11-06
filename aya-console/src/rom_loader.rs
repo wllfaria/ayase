@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct Rom<'rom> {
-    pub _name: &'rom str,
+    pub name: &'rom str,
     pub code: &'rom [u8],
     pub sprites: &'rom [u8],
 }
@@ -13,7 +13,7 @@ pub fn load_from_file(rom: &[u8]) -> Rom {
         .iter()
         .position(|ch| *ch == 0)
         .expect("no null terminator after name");
-    let _name = std::str::from_utf8(&rom[5..5 + name_len]).unwrap();
+    let name = std::str::from_utf8(&rom[5..5 + name_len]).unwrap();
 
     let code_offset: [u8; 2] = rom[0x44..0x46].try_into().unwrap();
     let code_offset = u16::from_le_bytes(code_offset) as usize;
@@ -28,5 +28,5 @@ pub fn load_from_file(rom: &[u8]) -> Rom {
     let code = &rom[code_offset..code_offset + code_size];
     let sprites = &rom[sprites_offset..sprites_offset + sprites_size];
 
-    Rom { _name, code, sprites }
+    Rom { name, code, sprites }
 }

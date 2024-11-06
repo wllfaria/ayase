@@ -277,9 +277,9 @@ fn resolve_imports(code: &str, module: &mut ResolvedModule, ast: &Ast, context: 
         let variables = resolve_import_vars(code, module, variables)?;
         let name = &code[name.start..name.end];
         let path = &code[path.start..path.end];
-        let code = crate::file::load_module_from_path(path).unwrap();
         let address = &code[Range::from(*address)];
         let address = u16::from_str_radix(address, 16).unwrap();
+        let code = crate::file::load_module_from_path(path).unwrap();
         resolve_module(name, path.into(), code, Some(variables), context, address)?;
         module.imports.push(path.into());
     }

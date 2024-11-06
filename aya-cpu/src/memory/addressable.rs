@@ -6,7 +6,7 @@ pub trait Addressable {
     where
         W: Into<Word> + Copy;
 
-    fn write<W>(&mut self, address: W, byte: u8) -> Result<()>
+    fn write<W>(&mut self, address: W, byte: impl Into<u8>) -> Result<()>
     where
         W: Into<Word> + Copy;
 

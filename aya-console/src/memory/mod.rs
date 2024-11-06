@@ -1,17 +1,7 @@
-mod background_memory;
-mod interface_memory;
+mod linear_memory;
 pub mod memory_mapper;
-mod program_memory;
-mod sprite_memory;
-mod stack_memory;
-mod tile_memory;
 
-pub use background_memory::BackgroundMemory;
-pub use interface_memory::InterfaceMemory;
-pub use program_memory::ProgramMemory;
-pub use sprite_memory::SpriteMemory;
-pub use stack_memory::StackMemory;
-pub use tile_memory::TileMemory;
+pub use linear_memory::LinearMemory;
 
 const KB: usize = 1024;
 const KB8: usize = KB * 8;
@@ -20,14 +10,44 @@ const KB16: usize = KB * 16;
 pub const TILE_MEMORY: usize = KB8;
 pub const SPRITE_MEMORY: usize = 640;
 pub const CODE_MEMORY: usize = KB16;
-pub const BG_MEMORY: usize = KB;
-pub const INTERFACE_MEMORY: usize = KB;
+pub const BG_MEMORY: usize = 420;
+pub const INTERFACE_MEMORY: usize = 420;
+pub const INTERRUPT_MEMORY: usize = 16;
+pub const INPUT_MEMORY: usize = 1;
 pub const STACK_MEMORY: usize = KB8;
 
+/// 8KIB Tile memory
 pub const TILE_MEM_LOC: (u16, u16) = (0x0000, 0x1FFF);
+
+/// 640B Sprite memory
 pub const SPRITE_MEM_LOC: (u16, u16) = (0x2000, 0x227F);
+
+/// 16KB Code memory
 pub const CODE_MEM_LOC: (u16, u16) = (0x2280, 0x627F);
-pub const BG_MEM_LOC: (u16, u16) = (0x6280, 0x667F);
-pub const UI_MEM_LOC: (u16, u16) = (0x6680, 0x6A7F);
+
+/// 420B Background memory
+pub const BG_MEM_LOC: (u16, u16) = (0x6280, 0x6423);
+
+/// 420B Background memory
+pub const UI_MEM_LOC: (u16, u16) = (0x6424, 0x65C7);
+
+///  16B Interrupt table
+pub const INTERRUPT_MEM_LOC: (u16, u16) = (0x65C8, 0x65D7);
+
+///   1B Input mapping
+pub const INPUT_MEM_LOC: (u16, u16) = (0x65D7, 0x65D8);
+
+/// 8KiB Stack memory
 pub const STACK_MEM_LOC: (u16, u16) = (0xE000, 0xFFFF);
-pub const INTERRUPT_TABLE: u16 = 0x6A80;
+
+#[repr(u16)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+pub enum Interrupt {
+    AfterFrame,
+}
+
+impl From<Interrupt> for u16 {
+    fn from(value: Interrupt) -> Self {
+        value as u16
+    }
+}

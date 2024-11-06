@@ -301,7 +301,7 @@ impl<'codegen> CodeGenerator<'codegen> {
 
         if let Statement::BinaryOp { lhs, operator, rhs } = node {
             if let (Some(lhs_str), Some(rhs_str)) = (self.evaluate_constants(lhs)?, self.evaluate_constants(rhs)?) {
-                let Ok(lhs) = u16::from_str_radix(&lhs_str, 16) else {
+                let Ok(lhs) = u16::from_str_radix(&lhs_str[1..], 16) else {
                     return Err(bail(
                         self.source,
                         "[INVALID_STATEMENT]: error while compiling statement",
@@ -309,7 +309,8 @@ impl<'codegen> CodeGenerator<'codegen> {
                         lhs.offset(),
                     ));
                 };
-                let Ok(rhs) = u16::from_str_radix(&rhs_str, 16) else {
+
+                let Ok(rhs) = u16::from_str_radix(&rhs_str[1..], 16) else {
                     return Err(bail(
                         self.source,
                         "[INVALID_STATEMENT]: error while compiling statement",
@@ -323,7 +324,8 @@ impl<'codegen> CodeGenerator<'codegen> {
                     Operator::Sub => lhs.wrapping_sub(rhs),
                     Operator::Mul => lhs.wrapping_mul(rhs),
                 };
-                return Ok(Some(format!("{result:X}")));
+
+                return Ok(Some(format!("${result:X}")));
             }
         };
 

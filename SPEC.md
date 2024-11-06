@@ -39,9 +39,10 @@ Acc - Will store the return value
 | 0x0000 | 0x1FFF |  8KiB Memory dedicated to hold [tiles](#tiles-section)     |
 | 0x2000 | 0x227F |  640B Memory dedicated to sprite drawing                   |
 | 0x2280 | 0x627F | 16KiB Memory dedicated to program source code              |
-| 0x6280 | 0x667F |  1KiB Memory for background tilemap drawing                |
-| 0x6680 | 0x6A7F |  1KiB Memory for interface tilemap drawing                 |
-| 0x6A80 | 0x6A9F |   32B Memory as interrupt table                            |
+| 0x6280 | 0x6423 |  420B Memory for background tilemap drawing                |
+| 0x6424 | 0x65C7 |  420B Memory for interface tilemap drawing                 |
+| 0x65C8 | 0x65D7 |   16B Memory as interrupt table                            |
+| 0x65D7 | 0x65D8 |    1B Memory as input mapping                              |
 | TODO: Rest of the memory layout                                              |
 | 0xE000 | 0xFFFF | 8KiB stack memory                                          |
 

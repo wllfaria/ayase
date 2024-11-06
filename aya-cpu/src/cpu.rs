@@ -650,8 +650,11 @@ impl<A: Addressable> Cpu<A> {
         Ok(())
     }
 
-    fn handle_interrupt(&mut self, value: u16) -> Result<()> {
-        let interrupt_idx = value & 0xF;
+    pub fn handle_interrupt(&mut self, idx: impl Into<u16>) -> Result<()> {
+        let interrupt_idx = idx.into() & 0xF;
+
+        // if the interrupt is unmasked (its 0) on the interrupt mask, then we should not enter the
+        // interrupt handler
         let is_unmasked = (1 << interrupt_idx) & self.registers.fetch(Register::IM);
         if is_unmasked == 0 {
             return Ok(());
@@ -660,6 +663,8 @@ impl<A: Addressable> Cpu<A> {
         let handler_pointer = self.interrupt_table + (interrupt_idx * 2).into();
         let address = self.memory.read_word(handler_pointer)?;
 
+        // if we are already within an interrupt (calling an interrupt from another), we don't save
+        // the stack state
         if !self.in_interrupt {
             self.save_stack()?;
         }

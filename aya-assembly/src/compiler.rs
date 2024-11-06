@@ -48,7 +48,7 @@ fn encode_literal_or_address(module: &mut CodegenModule, node: &Statement, inst:
             Ok(value)
         }
         Statement::Address(value) => encode_literal_or_address(module, value.as_ref(), inst),
-        _ => unreachable!(),
+        _ => unreachable!("{:?}", inst),
     }
 }
 

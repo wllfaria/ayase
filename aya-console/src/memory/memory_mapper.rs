@@ -3,7 +3,62 @@ use std::collections::VecDeque;
 use aya_cpu::memory::{Addressable, Error, Result};
 use aya_cpu::word::Word;
 
-use super::{BackgroundMemory, InterfaceMemory, ProgramMemory, SpriteMemory, StackMemory, TileMemory};
+use super::{
+    LinearMemory, BG_MEMORY, CODE_MEMORY, INPUT_MEMORY, INTERFACE_MEMORY, INTERRUPT_MEMORY, SPRITE_MEMORY,
+    STACK_MEMORY, TILE_MEMORY,
+};
+
+macro_rules! device {
+    ($name:ident, $size:expr) => {
+        #[derive(Debug)]
+        pub struct $name(LinearMemory<$size>);
+
+        impl From<LinearMemory<$size>> for $name {
+            fn from(mem: LinearMemory<$size>) -> Self {
+                Self(mem)
+            }
+        }
+
+        impl Addressable for $name {
+            fn write<W>(&mut self, address: W, byte: impl Into<u8>) -> Result<()>
+            where
+                W: Into<Word> + Copy,
+            {
+                self.0.write(address, byte)
+            }
+
+            fn read<W>(&self, address: W) -> Result<u8>
+            where
+                W: Into<Word> + Copy,
+            {
+                self.0.read(address)
+            }
+
+            fn write_word<W>(&mut self, address: W, word: u16) -> Result<()>
+            where
+                W: Into<Word> + Copy,
+            {
+                self.0.write_word(address, word)
+            }
+
+            fn read_word<W>(&self, address: W) -> Result<u16>
+            where
+                W: Into<Word> + Copy,
+            {
+                self.0.read_word(address)
+            }
+        }
+    };
+}
+
+device!(TileMem, TILE_MEMORY);
+device!(SpriteMem, SPRITE_MEMORY);
+device!(ProgramMem, CODE_MEMORY);
+device!(BackgroundMem, BG_MEMORY);
+device!(InterfaceMem, INTERFACE_MEMORY);
+device!(InterruptMem, INTERRUPT_MEMORY);
+device!(InputMem, INPUT_MEMORY);
+device!(StackMem, STACK_MEMORY);
 
 macro_rules! devices {
     ($($variant:ident => $type:ty),* $(,)?) => {
@@ -14,7 +69,7 @@ macro_rules! devices {
         }
 
         impl Addressable for Devices {
-            fn write<W>(&mut self, address: W, byte: u8) -> Result<()>
+            fn write<W>(&mut self, address: W, byte: impl Into<u8>) -> Result<()>
             where
                 W: Into<Word> + Copy,
             {
@@ -60,12 +115,14 @@ macro_rules! devices {
 }
 
 devices! {
-    Program => ProgramMemory,
-    Tile => TileMemory,
-    Stack => StackMemory,
-    Background => BackgroundMemory,
-    Sprite => SpriteMemory,
-    Interface => InterfaceMemory
+    Tile => TileMem,
+    Sprite => SpriteMem,
+    Program => ProgramMem,
+    Background => BackgroundMem,
+    Interface => InterfaceMem,
+    Interrupt => InterruptMem,
+    Input => InputMem,
+    Stack => StackMem,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
@@ -99,6 +156,7 @@ impl MemoryMapper {
             end: end.into(),
             mapping_mode,
         });
+
         Ok(())
     }
 
@@ -131,7 +189,7 @@ impl Addressable for MemoryMapper {
         region.device.read(address)
     }
 
-    fn write<W>(&mut self, address: W, byte: u8) -> Result<()>
+    fn write<W>(&mut self, address: W, byte: impl Into<u8>) -> Result<()>
     where
         W: Into<Word> + Copy,
     {

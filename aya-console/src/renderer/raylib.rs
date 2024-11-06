@@ -26,14 +26,20 @@ pub struct RaylibRenderer {
     frame_duration: Duration,
 }
 
+impl RaylibRenderer {
+    pub fn handle(&self) -> &RaylibHandle {
+        &self.handle
+    }
+}
+
 impl Renderer for RaylibRenderer {
-    fn start(fps: f64, scale: u16) -> Self {
+    fn start(name: &str, fps: f64, scale: u16) -> Self {
         let (handle, thread) = raylib::init()
             .size(
                 TILES_WIDTH as i32 * SPRITE_WIDTH as i32 * scale as i32,
                 TILES_HEIGHT as i32 * SPRITE_WIDTH as i32 * scale as i32,
             )
-            .title("AYA Console")
+            .title(name)
             .resizable()
             .build();
 
@@ -60,6 +66,19 @@ impl Renderer for RaylibRenderer {
     fn draw_frame(&mut self, memory: &mut impl Addressable) -> Result<()> {
         let mut draw_handle = self.handle.begin_drawing(&self.thread);
         draw_handle.clear_background(Color::BLACK);
+
+        for y in 0..TILES_HEIGHT {
+            for x in 0..TILES_WIDTH {
+                let tile_x = x * SPRITE_WIDTH * self.scale;
+                let tile_y = y * SPRITE_WIDTH * self.scale;
+                if (x + y) % 2 == 0 {
+                    render_tile(tile_x, tile_y, 7 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
+                } else {
+                    render_tile(tile_x, tile_y, 6 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
+                }
+            }
+        }
+
         render_background(memory, &mut draw_handle, self.scale)?;
         render_sprites(memory, &mut draw_handle, self.scale)?;
         render_interface(memory, &mut draw_handle, self.scale)?;
@@ -107,9 +126,9 @@ fn render_tile(
 ) -> Result<()> {
     for byte_idx in 0..BYTES_PER_TILE {
         let tile_byte = memory.read(tile_address + byte_idx)?;
-
         let color_left = PALETTE[(tile_byte >> 4) as usize];
         let color_right = PALETTE[(tile_byte & 0xf) as usize];
+
         let left_x = x + ((byte_idx % 4) * 2) * scale;
         let right_x = left_x + scale;
         let y = y + byte_idx / 4 * scale;

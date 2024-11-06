@@ -1,0 +1,3 @@
+; main @ ./main.aya
+loop:
+JMP &[!loop]
