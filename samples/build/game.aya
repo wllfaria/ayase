@@ -1,25 +1,55 @@
 ; AfterFrame @ ./after_frame.aya
 RTI
 ; main @ ./main.aya
+const PLAYER = $2000
+const PLAYER_X = $2001
+const PLAYER_Y = $2002
 start:
-PSH R8
-MOV R8, $3032
-PSH R7
-MOV R7, R2
-PSH R6
-MOV R6, !var
-ADD R7, R6
-ADD R8, R7
-MOV R2, R8
-POP R6
-POP R7
-POP R8
+CALL &[!setup_sprites]
 CALL &[!setup_interrupts]
-CALL &[!loop]
-HLT
+CALL &[!game_loop]
+setup_sprites:
+MOV8 &[!PLAYER], $04
+MOV8 &[!PLAYER_X], $10
+MOV8 &[!PLAYER_Y], $10
 setup_interrupts:
 MOV &[$65C8], $3280
 RET
-loop:
-JMP &[!loop]
-RET
+check_inputs:
+MOV8 R8, &[$65D8]
+check_left_press:
+MOV ACC, R8
+AND ACC, $80
+RSH ACC, $7
+JNE &[!check_down_press], $1
+MOV8 R7, &[!PLAYER_X]
+SUB R7, $1
+MOV8 &[!PLAYER_X], R7
+check_down_press:
+MOV ACC, R8
+AND ACC, $40
+RSH ACC, $6
+JNE &[!check_up_press], $1
+MOV8 R7, &[!PLAYER_Y]
+ADD R7, $1
+MOV8 &[!PLAYER_Y], R7
+check_up_press:
+MOV ACC, R8
+AND ACC, $20
+RSH ACC, $5
+JNE &[!check_right_press], $1
+MOV8 R7, &[!PLAYER_Y]
+SUB R7, $1
+MOV8 &[!PLAYER_Y], R7
+check_right_press:
+MOV ACC, R8
+AND ACC, $10
+RSH ACC, $4
+JNE &[!game_loop], $1
+MOV8 R7, &[!PLAYER_X]
+ADD R7, $1
+MOV8 &[!PLAYER_X], R7
+game_loop:
+JMP &[!check_inputs]
+JMP &[!game_loop]
+HLT

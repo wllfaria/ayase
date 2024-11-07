@@ -185,7 +185,7 @@ impl Registers {
         registers.inner[Register::SP as usize] = u16::from(stack_address) - 2;
         let word = start_address.into();
         registers.inner[Register::IP as usize] = word.into();
-        registers.inner[Register::IM as usize] = 0xffff;
+        registers.inner[Register::IM as usize] = 0x0000;
         registers
     }
 
@@ -211,7 +211,8 @@ impl Registers {
     }
 
     #[cfg(debug_assertions)]
-    pub fn inspect_register(&self, register: Register) {
+    pub fn inspect_register(&self, register: impl Into<Register>) {
+        let register = register.into();
         println!("{: <3} @ 0x{:04X}", register, self.fetch(register));
     }
 }

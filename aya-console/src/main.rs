@@ -13,11 +13,10 @@ use aya_console::memory::{
 };
 use aya_cpu::cpu::{ControlFlow, Cpu};
 use aya_cpu::memory::Addressable;
-use aya_cpu::register::Register;
 use input::{Input, KeyStatus, RaylibInput};
 use renderer::{RaylibRenderer, Renderer};
 
-static CLOCK_CYCLE: usize = 20_000; // 4.2MHZ
+static CLOCK_CYCLE: usize = 200; // 4.2MHZ
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rom_file = std::env::args().nth(1).unwrap();
@@ -42,13 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             renderer.draw_frame(&mut cpu.memory)?;
         }
 
-        for _ in 0..CLOCK_CYCLE {
-            if let ControlFlow::Halt(_) = cpu.step()? {
-                return Ok(());
-            };
-        }
-
-        cpu.registers.inspect_register(Register::R8);
+        //for _ in 0..CLOCK_CYCLE {
+        if let ControlFlow::Halt(_) = cpu.step()? {
+            return Ok(());
+        };
+        //}
 
         cpu.memory.write(INPUT_MEM_LOC.0, KeyStatus::reset())?;
         cpu.handle_interrupt(Interrupt::AfterFrame)?;

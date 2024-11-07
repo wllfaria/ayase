@@ -1,8 +1,6 @@
 use std::time::{Duration, Instant};
 
-use aya_console::memory::{
-    BG_MEMORY, BG_MEM_LOC, INTERFACE_MEMORY, SPRITE_MEMORY, SPRITE_MEM_LOC, TILE_MEM_LOC, UI_MEM_LOC,
-};
+use aya_console::memory::{BG_MEMORY, BG_MEM_LOC, INTERFACE_MEMORY, SPRITE_MEM_LOC, TILE_MEM_LOC, UI_MEM_LOC};
 use aya_console::PALETTE;
 use aya_cpu::memory::Addressable;
 use raylib::color::Color;
@@ -99,8 +97,8 @@ fn render_sprites(memory: &mut impl Addressable, draw_handle: &mut RaylibDrawHan
         let sprite_y = memory.read(sprite_addr + 2)?;
 
         render_tile(
-            sprite_x as u16,
-            sprite_y as u16,
+            sprite_x as u16 * scale,
+            sprite_y as u16 * scale,
             TILE_MEM_LOC.0 + (tile_idx as u16) * 32,
             memory,
             draw_handle,

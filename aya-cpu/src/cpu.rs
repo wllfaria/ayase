@@ -62,8 +62,10 @@ impl<A: Addressable> Cpu<A> {
     }
 
     fn fetch(&mut self) -> Result<Instruction> {
+        self.registers.inspect_register(Register::IP);
         let op = self.next_instruction(InstructionSize::Small)?;
-        match OpCode::try_from(op)? {
+        let op = OpCode::try_from(op)?;
+        match op {
             OpCode::MovLitReg => {
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
@@ -71,11 +73,11 @@ impl<A: Addressable> Cpu<A> {
                 Ok(Instruction::MovLitReg(reg, val))
             }
             OpCode::MovRegReg => {
-                let reg_from = self.next_instruction(InstructionSize::Small)?;
-                let reg_from = Register::try_from(reg_from)?;
                 let reg_to = self.next_instruction(InstructionSize::Small)?;
                 let reg_to = Register::try_from(reg_to)?;
-                Ok(Instruction::MovRegReg(reg_from, reg_to))
+                let reg_from = self.next_instruction(InstructionSize::Small)?;
+                let reg_from = Register::try_from(reg_from)?;
+                Ok(Instruction::MovRegReg(reg_to, reg_from))
             }
             OpCode::MovRegMem => {
                 let address = self.next_instruction(InstructionSize::Word)?;
@@ -95,11 +97,11 @@ impl<A: Addressable> Cpu<A> {
                 Ok(Instruction::MovMemReg(address.into(), reg))
             }
             OpCode::MovRegPtrReg => {
-                let reg_from = self.next_instruction(InstructionSize::Small)?;
                 let reg_to = self.next_instruction(InstructionSize::Small)?;
-                let reg_from = Register::try_from(reg_from)?;
                 let reg_to = Register::try_from(reg_to)?;
-                Ok(Instruction::MovRegPtrReg(reg_from, reg_to))
+                let reg_from = self.next_instruction(InstructionSize::Small)?;
+                let reg_from = Register::try_from(reg_from)?;
+                Ok(Instruction::MovRegPtrReg(reg_to, reg_from))
             }
             OpCode::MovLitRegPtr => {
                 let reg = self.next_instruction(InstructionSize::Small)?;
@@ -365,7 +367,7 @@ impl<A: Addressable> Cpu<A> {
     fn execute(&mut self, instruction: Instruction) -> Result<ControlFlow> {
         match instruction {
             Instruction::MovLitReg(reg, val) => self.registers.set(reg, val),
-            Instruction::MovRegReg(from, to) => {
+            Instruction::MovRegReg(to, from) => {
                 let val = self.registers.fetch(from);
                 self.registers.set(to, val);
             }

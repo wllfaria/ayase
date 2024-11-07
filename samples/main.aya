@@ -5,10 +5,6 @@ const PLAYER_X = $2001
 const PLAYER_Y = $2002
 
 start:
-  call &[!setup_sprites]
-  call &[!setup_interrupts]
-  call &[!game_loop]
-
 setup_sprites:
   mov8 &[!PLAYER], $04
   mov8 &[!PLAYER_X], $10
@@ -16,7 +12,6 @@ setup_sprites:
 
 setup_interrupts:
   mov &[$65C8], $3280
-  ret
 
 check_inputs:
   mov8 r8, &[$65D8]
