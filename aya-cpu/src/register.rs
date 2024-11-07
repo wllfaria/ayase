@@ -206,7 +206,12 @@ impl Registers {
     #[cfg(debug_assertions)]
     pub fn inspect(&self) {
         for register in Register::iter() {
-            println!("{: <3} @ 0x{:04X}", register, self.fetch(register));
+            self.inspect_register(register);
         }
+    }
+
+    #[cfg(debug_assertions)]
+    pub fn inspect_register(&self, register: Register) {
+        println!("{: <3} @ 0x{:04X}", register, self.fetch(register));
     }
 }

@@ -32,7 +32,7 @@ pub const BG_MEM_LOC: (u16, u16) = (0x6280, 0x6423);
 pub const UI_MEM_LOC: (u16, u16) = (0x6424, 0x65C7);
 
 ///  16B Interrupt table
-pub const INTERRUPT_MEM_LOC: (u16, u16) = (0x65C8, 0x65D7);
+pub const INTERRUPT_MEM_LOC: (u16, u16) = (0x65C8, 0x65D6);
 
 ///   1B Input mapping
 pub const INPUT_MEM_LOC: (u16, u16) = (0x65D8, 0x65D8);

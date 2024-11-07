@@ -2,7 +2,14 @@ mod raylib;
 
 pub use raylib::RaylibInput;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyStatus(u8);
+
+impl std::fmt::Display for KeyStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl KeyStatus {
     pub fn reset() -> Self {

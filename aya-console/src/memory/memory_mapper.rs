@@ -194,13 +194,10 @@ impl Addressable for MemoryMapper {
         W: Into<Word> + Copy,
     {
         let address = address.into();
+
         let Some(region) = self.find_region_mut(address) else {
             return Err(Error::UnmappedAddress(address));
         };
-
-        if region.end - region.start == 1.into() {
-            println!("{:?}", region);
-        }
 
         let address = match region.mapping_mode {
             MappingMode::Remap => address - region.start,
@@ -213,12 +210,13 @@ impl Addressable for MemoryMapper {
     where
         W: Into<Word> + Copy,
     {
-        let Some(region) = self.find_region(address.into()) else {
-            return Err(Error::UnmappedAddress(address.into()));
+        let address = address.into();
+        let Some(region) = self.find_region(address) else {
+            return Err(Error::UnmappedAddress(address));
         };
         let address = match region.mapping_mode {
-            MappingMode::Remap => address.into() - region.start,
-            MappingMode::Direct => address.into(),
+            MappingMode::Remap => address - region.start,
+            MappingMode::Direct => address,
         };
         region.device.read_word(address)
     }
@@ -227,12 +225,13 @@ impl Addressable for MemoryMapper {
     where
         W: Into<Word> + Copy,
     {
-        let Some(region) = self.find_region_mut(address.into()) else {
-            return Err(Error::UnmappedAddress(address.into()));
+        let address = address.into();
+        let Some(region) = self.find_region_mut(address) else {
+            return Err(Error::UnmappedAddress(address));
         };
         let address = match region.mapping_mode {
-            MappingMode::Remap => address.into() - region.start,
-            MappingMode::Direct => address.into(),
+            MappingMode::Remap => address - region.start,
+            MappingMode::Direct => address,
         };
         region.device.write_word(address, word)
     }

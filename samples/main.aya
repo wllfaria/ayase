@@ -1,14 +1,63 @@
 import "./after_frame.aya" AfterFrame &[$1000] { }
 
+const PLAYER = $2000
+const PLAYER_X = $2001
+const PLAYER_Y = $2002
+
 start:
+  call &[!setup_sprites]
   call &[!setup_interrupts]
-  call &[!loop]
-  hlt
+  call &[!game_loop]
+
+setup_sprites:
+  mov8 &[!PLAYER], $04
+  mov8 &[!PLAYER_X], $10
+  mov8 &[!PLAYER_Y], $10
 
 setup_interrupts:
   mov &[$65C8], $3280
   ret
 
-loop:
-  jmp &[!loop]
-  ret
+check_inputs:
+  mov8 r8, &[$65D8]
+
+check_left_press:
+  mov acc, r8
+  and acc, $80
+  rsh acc, $7
+  jne &[!check_down_press], $1
+  mov8 r7, &[!PLAYER_X]
+  sub r7, $1
+  mov8 &[!PLAYER_X], r7
+
+check_down_press:
+  mov acc, r8
+  and acc, $40
+  rsh acc, $6
+  jne &[!check_up_press], $1
+  mov8 r7, &[!PLAYER_Y]
+  add r7, $1
+  mov8 &[!PLAYER_Y], r7
+
+check_up_press:
+  mov acc, r8
+  and acc, $20
+  rsh acc, $5
+  jne &[!check_right_press], $1
+  mov8 r7, &[!PLAYER_Y]
+  sub r7, $1
+  mov8 &[!PLAYER_Y], r7
+
+check_right_press:
+  mov acc, r8
+  and acc, $10
+  rsh acc, $4
+  jne &[!game_loop], $1
+  mov8 r7, &[!PLAYER_X]
+  add r7, $1
+  mov8 &[!PLAYER_X], r7
+
+game_loop:
+  jmp &[!check_inputs]
+  jmp &[!game_loop]
+  hlt

@@ -17,7 +17,8 @@ impl<const SIZE: usize> Addressable for LinearMemory<SIZE> {
     where
         W: Into<Word> + Copy,
     {
-        Ok(self.memory[usize::from(address.into())])
+        let address = address.into();
+        Ok(self.memory[usize::from(address)])
     }
 
     fn write<W>(&mut self, address: W, byte: impl Into<u8>) -> Result<()>

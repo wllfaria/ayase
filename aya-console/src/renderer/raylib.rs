@@ -67,17 +67,17 @@ impl Renderer for RaylibRenderer {
         let mut draw_handle = self.handle.begin_drawing(&self.thread);
         draw_handle.clear_background(Color::BLACK);
 
-        for y in 0..TILES_HEIGHT {
-            for x in 0..TILES_WIDTH {
-                let tile_x = x * SPRITE_WIDTH * self.scale;
-                let tile_y = y * SPRITE_WIDTH * self.scale;
-                if (x + y) % 2 == 0 {
-                    render_tile(tile_x, tile_y, 7 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
-                } else {
-                    render_tile(tile_x, tile_y, 6 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
-                }
-            }
-        }
+        //for y in 0..TILES_HEIGHT {
+        //    for x in 0..TILES_WIDTH {
+        //        let tile_x = x * SPRITE_WIDTH * self.scale;
+        //        let tile_y = y * SPRITE_WIDTH * self.scale;
+        //        if (x + y) % 2 == 0 {
+        //            render_tile(tile_x, tile_y, 7 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
+        //        } else {
+        //            render_tile(tile_x, tile_y, 6 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
+        //        }
+        //    }
+        //}
 
         render_background(memory, &mut draw_handle, self.scale)?;
         render_sprites(memory, &mut draw_handle, self.scale)?;
@@ -92,7 +92,23 @@ fn render_background(memory: &mut impl Addressable, draw_handle: &mut RaylibDraw
 }
 
 fn render_sprites(memory: &mut impl Addressable, draw_handle: &mut RaylibDrawHandle, scale: u16) -> Result<()> {
-    draw_memory_section(memory, draw_handle, SPRITE_MEM_LOC.0, SPRITE_MEMORY as u16, scale)
+    for i in 0..40 {
+        let sprite_addr = SPRITE_MEM_LOC.0 + i * 16;
+        let tile_idx = memory.read(sprite_addr)?;
+        let sprite_x = memory.read(sprite_addr + 1)?;
+        let sprite_y = memory.read(sprite_addr + 2)?;
+
+        render_tile(
+            sprite_x as u16,
+            sprite_y as u16,
+            TILE_MEM_LOC.0 + (tile_idx as u16) * 32,
+            memory,
+            draw_handle,
+            scale,
+        )?;
+    }
+
+    Ok(())
 }
 
 fn render_interface(memory: &mut impl Addressable, draw_handle: &mut RaylibDrawHandle, scale: u16) -> Result<()> {

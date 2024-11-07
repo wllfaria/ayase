@@ -13,6 +13,7 @@ use aya_console::memory::{
 };
 use aya_cpu::cpu::{ControlFlow, Cpu};
 use aya_cpu::memory::Addressable;
+use aya_cpu::register::Register;
 use input::{Input, KeyStatus, RaylibInput};
 use renderer::{RaylibRenderer, Renderer};
 
@@ -46,6 +47,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 return Ok(());
             };
         }
+
+        cpu.registers.inspect_register(Register::R8);
 
         cpu.memory.write(INPUT_MEM_LOC.0, KeyStatus::reset())?;
         cpu.handle_interrupt(Interrupt::AfterFrame)?;
