@@ -1,4 +1,4 @@
-use super::common::peek;
+use super::common::{parse_variable, peek};
 use super::Result;
 use crate::lexer::{Kind, Lexer, TransposeRef};
 use crate::parser::ast::Statement;
@@ -23,16 +23,11 @@ impl From<DataSize> for u8 {
     }
 }
 
-pub fn parse_simple_address<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {
+pub fn parse_address_var<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {
     expect(Kind::Ampersand, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
     expect(Kind::LBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
 
-    let Ok(Some(token)) = lexer.peek().transpose() else {
-        let Err(err) = lexer.next().transpose() else {
-            return unexpected_eof(source.as_ref(), "unterminated import statement");
-        };
-        return Err(err);
-    };
+    let token = peek(source.as_ref(), lexer)?;
 
     let value = match token.kind {
         Kind::HexNumber => Statement::Address(Box::new(Statement::HexLiteral(parse_hex_lit(
@@ -41,7 +36,33 @@ pub fn parse_simple_address<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S
             help.as_ref(),
             message.as_ref(),
         )?))),
-        _ => return unexpected_token(source.as_ref(), token),
+        Kind::Bang => Statement::Address(Box::new(Statement::Var(parse_variable(
+            source.as_ref(),
+            lexer,
+            help.as_ref(),
+            message.as_ref(),
+        )?))),
+        _ => return unexpected_token(source.as_ref(), &token),
+    };
+
+    expect(Kind::RBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+    Ok(value)
+}
+
+pub fn parse_simple_address<S: AsRef<str>>(source: S, lexer: &mut Lexer, help: S, message: S) -> Result<Statement> {
+    expect(Kind::Ampersand, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+    expect(Kind::LBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;
+
+    let token = peek(source.as_ref(), lexer)?;
+
+    let value = match token.kind {
+        Kind::HexNumber => Statement::Address(Box::new(Statement::HexLiteral(parse_hex_lit(
+            source.as_ref(),
+            lexer,
+            help.as_ref(),
+            message.as_ref(),
+        )?))),
+        _ => return unexpected_token(source.as_ref(), &token),
     };
 
     expect(Kind::RBracket, lexer, source.as_ref(), help.as_ref(), message.as_ref())?;

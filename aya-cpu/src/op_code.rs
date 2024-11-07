@@ -42,6 +42,12 @@ op_codes! {
     MovRegPtrReg    = 0x15,
     MovLitRegPtr    = 0x16,
 
+    Mov8LitReg      = 0x17,
+    Mov8RegReg      = 0x18,
+    Mov8RegMem      = 0x19,
+    Mov8MemReg      = 0x1A,
+    Mov8LitMem      = 0x1B,
+
     AddRegReg       = 0x20,
     AddLitReg       = 0x21,
     SubRegReg       = 0x22,

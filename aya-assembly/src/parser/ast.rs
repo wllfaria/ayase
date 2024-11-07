@@ -19,7 +19,7 @@ impl TryFrom<Token> for Operator {
             Kind::Plus => Ok(Self::Add),
             Kind::Minus => Ok(Self::Sub),
             Kind::Star => Ok(Self::Mul),
-            _ => todo!(),
+            _ => unreachable!(),
         }
     }
 }
@@ -184,6 +184,11 @@ pub enum InstructionKind {
     RegMem,
     MemReg,
     LitMem,
+    LitReg8,
+    RegReg8,
+    RegMem8,
+    MemReg8,
+    LitMem8,
     RegPtrReg,
     LitRegPtr,
     NoArgs,
@@ -199,6 +204,11 @@ impl InstructionKind {
             InstructionKind::RegMem => 4,
             InstructionKind::MemReg => 4,
             InstructionKind::LitMem => 5,
+            InstructionKind::LitReg8 => 3,
+            InstructionKind::RegReg8 => 3,
+            InstructionKind::RegMem8 => 4,
+            InstructionKind::MemReg8 => 4,
+            InstructionKind::LitMem8 => 4,
             InstructionKind::RegPtrReg => 3,
             InstructionKind::LitRegPtr => 4,
             InstructionKind::NoArgs => 1,
@@ -217,6 +227,11 @@ pub enum Instruction {
     MovLitMem(Statement, Statement),
     MovRegPtrReg(Statement, Statement),
     MovLitRegPtr(Statement, Statement),
+    Mov8LitReg(Statement, Statement),
+    Mov8RegReg(Statement, Statement),
+    Mov8RegMem(Statement, Statement),
+    Mov8MemReg(Statement, Statement),
+    Mov8LitMem(Statement, Statement),
     AddRegReg(Statement, Statement),
     AddLitReg(Statement, Statement),
     SubRegReg(Statement, Statement),
@@ -269,6 +284,11 @@ impl Instruction {
             | Instruction::MovLitMem(lhs, _)
             | Instruction::MovRegPtrReg(lhs, _)
             | Instruction::MovLitRegPtr(lhs, _)
+            | Instruction::Mov8LitReg(lhs, _)
+            | Instruction::Mov8RegReg(lhs, _)
+            | Instruction::Mov8RegMem(lhs, _)
+            | Instruction::Mov8MemReg(lhs, _)
+            | Instruction::Mov8LitMem(lhs, _)
             | Instruction::AddRegReg(lhs, _)
             | Instruction::AddLitReg(lhs, _)
             | Instruction::SubRegReg(lhs, _)
@@ -320,6 +340,11 @@ impl Instruction {
             | Instruction::MovLitMem(_, rhs)
             | Instruction::MovRegPtrReg(_, rhs)
             | Instruction::MovLitRegPtr(_, rhs)
+            | Instruction::Mov8LitReg(_, rhs)
+            | Instruction::Mov8RegReg(_, rhs)
+            | Instruction::Mov8RegMem(_, rhs)
+            | Instruction::Mov8MemReg(_, rhs)
+            | Instruction::Mov8LitMem(_, rhs)
             | Instruction::AddRegReg(_, rhs)
             | Instruction::AddLitReg(_, rhs)
             | Instruction::SubRegReg(_, rhs)
@@ -373,6 +398,12 @@ impl Instruction {
             Instruction::MovLitMem(_, _) => OpCode::MovLitMem,
             Instruction::MovRegPtrReg(_, _) => OpCode::MovRegPtrReg,
             Instruction::MovLitRegPtr(_, _) => OpCode::MovLitRegPtr,
+
+            Instruction::Mov8LitReg(_, _) => OpCode::Mov8LitReg,
+            Instruction::Mov8RegReg(_, _) => OpCode::Mov8RegReg,
+            Instruction::Mov8RegMem(_, _) => OpCode::Mov8RegMem,
+            Instruction::Mov8MemReg(_, _) => OpCode::Mov8MemReg,
+            Instruction::Mov8LitMem(_, _) => OpCode::Mov8LitMem,
 
             Instruction::AddRegReg(_, _) => OpCode::AddRegReg,
             Instruction::AddLitReg(_, _) => OpCode::AddLitReg,
@@ -432,6 +463,12 @@ impl Instruction {
             | Instruction::RshLitReg(_, _)
             | Instruction::XorLitReg(_, _) => InstructionKind::LitReg,
 
+            Instruction::Mov8LitReg(_, _) => InstructionKind::LitReg8,
+            Instruction::Mov8RegReg(_, _) => InstructionKind::RegReg8,
+            Instruction::Mov8RegMem(_, _) => InstructionKind::RegMem8,
+            Instruction::Mov8MemReg(_, _) => InstructionKind::MemReg8,
+            Instruction::Mov8LitMem(_, _) => InstructionKind::LitMem8,
+
             Instruction::MovRegReg(_, _)
             | Instruction::AddRegReg(_, _)
             | Instruction::SubRegReg(_, _)
@@ -487,6 +524,11 @@ impl Instruction {
             Instruction::MovLitMem(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::MovRegPtrReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::MovLitRegPtr(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::Mov8LitReg(lhs, rhs) => (lhs.offset().start - BIG..rhs.offset().end).into(),
+            Instruction::Mov8RegReg(lhs, rhs) => (lhs.offset().start - BIG..rhs.offset().end).into(),
+            Instruction::Mov8RegMem(lhs, rhs) => (lhs.offset().start - BIG..rhs.offset().end).into(),
+            Instruction::Mov8MemReg(lhs, rhs) => (lhs.offset().start - BIG..rhs.offset().end).into(),
+            Instruction::Mov8LitMem(lhs, rhs) => (lhs.offset().start - BIG..rhs.offset().end).into(),
             Instruction::AddRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::AddLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::SubRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),

@@ -63,9 +63,7 @@ impl<A: Addressable> Cpu<A> {
 
     fn fetch(&mut self) -> Result<Instruction> {
         let op = self.next_instruction(InstructionSize::Small)?;
-        let op = OpCode::try_from(op)?;
-
-        match op {
+        match OpCode::try_from(op)? {
             OpCode::MovLitReg => {
                 let reg = self.next_instruction(InstructionSize::Small)?;
                 let reg = Register::try_from(reg)?;
@@ -108,6 +106,38 @@ impl<A: Addressable> Cpu<A> {
                 let lit = self.next_instruction(InstructionSize::Word)?;
                 let reg = Register::try_from(reg)?;
                 Ok(Instruction::MovLitRegPtr(reg, lit))
+            }
+            OpCode::Mov8LitReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let val = self.next_instruction(InstructionSize::Small)?;
+                let val = (val & 0xFF) as u8;
+                Ok(Instruction::Mov8LitReg(reg, val))
+            }
+            OpCode::Mov8RegReg => {
+                let reg_from = self.next_instruction(InstructionSize::Small)?;
+                let reg_from = Register::try_from(reg_from)?;
+                let reg_to = self.next_instruction(InstructionSize::Small)?;
+                let reg_to = Register::try_from(reg_to)?;
+                Ok(Instruction::Mov8RegReg(reg_from, reg_to))
+            }
+            OpCode::Mov8RegMem => {
+                let address = self.next_instruction(InstructionSize::Word)?;
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                Ok(Instruction::Mov8RegMem(reg, address.into()))
+            }
+            OpCode::Mov8MemReg => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let reg = Register::try_from(reg)?;
+                let address = self.next_instruction(InstructionSize::Word)?;
+                Ok(Instruction::Mov8MemReg(address.into(), reg))
+            }
+            OpCode::Mov8LitMem => {
+                let address = self.next_instruction(InstructionSize::Word)?;
+                let val = self.next_instruction(InstructionSize::Small)?;
+                let val = (val & 0xFF) as u8;
+                Ok(Instruction::Mov8LitMem(address.into(), val))
             }
             OpCode::PushLit => {
                 let val = self.next_instruction(InstructionSize::Word)?;
@@ -358,6 +388,24 @@ impl<A: Addressable> Cpu<A> {
             Instruction::MovLitRegPtr(reg, lit) => {
                 let address = self.registers.fetch(reg);
                 self.memory.write_word(address, lit)?;
+            }
+            Instruction::Mov8LitReg(reg, lit) => self.registers.set(reg, lit as u16),
+            Instruction::Mov8RegReg(from, to) => {
+                let val = self.registers.fetch(from);
+                let val = val & 0xFF;
+                self.registers.set(to, val);
+            }
+            Instruction::Mov8RegMem(reg, address) => {
+                let val = self.registers.fetch(reg);
+                let val = val & 0xFF;
+                self.memory.write(address, val as u8)?;
+            }
+            Instruction::Mov8LitMem(address, val) => {
+                self.memory.write(address, val)?;
+            }
+            Instruction::Mov8MemReg(address, reg) => {
+                let val = self.memory.read(address)?;
+                self.registers.set(reg, val as u16);
             }
 
             Instruction::AddRegReg(r1, r2) => {

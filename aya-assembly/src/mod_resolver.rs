@@ -19,6 +19,14 @@ impl Either {
 
         *value
     }
+
+    pub fn to_value_small(&self) -> u8 {
+        let Either::ResolvedValue(value) = self else {
+            panic!("conversion of Eiter::ModuleField into u16 is not possible");
+        };
+
+        *value as u8
+    }
 }
 
 #[derive(Debug, Default, Clone)]

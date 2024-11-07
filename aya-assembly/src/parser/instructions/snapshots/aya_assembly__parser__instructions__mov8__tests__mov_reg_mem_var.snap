@@ -1,0 +1,22 @@
+---
+source: aya-assembly/src/parser/instructions/mov8.rs
+expression: result
+---
+Instruction(
+    Mov8RegMem(
+        Address(
+            Var(
+                ByteOffset {
+                    start: 8,
+                    end: 11,
+                },
+            ),
+        ),
+        Register(
+            ByteOffset {
+                start: 14,
+                end: 16,
+            },
+        ),
+    ),
+)

@@ -1,0 +1,59 @@
+---
+source: aya-assembly/src/parser/instructions/mov8.rs
+assertion_line: 269
+expression: result
+---
+Instruction(
+    Mov8LitMem(
+        Address(
+            BinaryOp {
+                lhs: Var(
+                    ByteOffset {
+                        start: 8,
+                        end: 11,
+                    },
+                ),
+                operator: Add,
+                rhs: BinaryOp {
+                    lhs: HexLiteral(
+                        ByteOffset {
+                            start: 15,
+                            end: 19,
+                        },
+                    ),
+                    operator: Add,
+                    rhs: Register(
+                        ByteOffset {
+                            start: 22,
+                            end: 24,
+                        },
+                    ),
+                },
+            },
+        ),
+        BinaryOp {
+            lhs: HexLiteral(
+                ByteOffset {
+                    start: 29,
+                    end: 33,
+                },
+            ),
+            operator: Add,
+            rhs: BinaryOp {
+                lhs: Register(
+                    ByteOffset {
+                        start: 36,
+                        end: 38,
+                    },
+                ),
+                operator: Add,
+                rhs: Var(
+                    ByteOffset {
+                        start: 42,
+                        end: 45,
+                    },
+                ),
+            },
+        },
+    ),
+)

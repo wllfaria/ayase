@@ -1,0 +1,22 @@
+---
+source: aya-assembly/src/parser/instructions/mov8.rs
+expression: result
+---
+Instruction(
+    Mov8LitMem(
+        Address(
+            HexLiteral(
+                ByteOffset {
+                    start: 8,
+                    end: 12,
+                },
+            ),
+        ),
+        HexLiteral(
+            ByteOffset {
+                start: 16,
+                end: 18,
+            },
+        ),
+    ),
+)

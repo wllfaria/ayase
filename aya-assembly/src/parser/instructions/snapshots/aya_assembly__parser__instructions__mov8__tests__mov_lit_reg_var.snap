@@ -1,0 +1,20 @@
+---
+source: aya-assembly/src/parser/instructions/mov8.rs
+expression: result
+---
+Instruction(
+    Mov8LitReg(
+        Register(
+            ByteOffset {
+                start: 5,
+                end: 7,
+            },
+        ),
+        Var(
+            ByteOffset {
+                start: 10,
+                end: 13,
+            },
+        ),
+    ),
+)

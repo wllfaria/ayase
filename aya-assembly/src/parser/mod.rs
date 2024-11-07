@@ -45,6 +45,7 @@ fn parse_instruction<S: AsRef<str>>(source: S, lexer: &mut Lexer, kind: Kind) ->
         Kind::Hlt => parse_hlt(source, lexer),
         Kind::Int => parse_int(source, lexer),
         Kind::Rti => parse_rti(source, lexer),
+        Kind::Mov8 => parse_mov8(source, lexer),
         _ => unreachable!(),
     }
 }

@@ -33,6 +33,7 @@ macro_rules! formatted {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum InstructionPrefix {
     Mov,
+    Mov8,
     Add,
     Sub,
     Mul,
@@ -64,6 +65,7 @@ impl std::fmt::Display for InstructionPrefix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             InstructionPrefix::Mov => write!(f, "MOV"),
+            InstructionPrefix::Mov8 => write!(f, "MOV8"),
             InstructionPrefix::Add => write!(f, "ADD"),
             InstructionPrefix::Sub => write!(f, "SUB"),
             InstructionPrefix::Mul => write!(f, "MUL"),
@@ -524,6 +526,99 @@ impl<'codegen> CodeGenerator<'codegen> {
                 let lhs = self.get_address(lhs)?;
                 let rhs = self.gen_hex_lit(rhs)?;
                 self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::Mov8RegReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov8;
+                let lhs = self.get_register(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, lhs, rhs));
+            }
+            Instruction::Mov8LitReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov8;
+                let lhs = self.get_register(lhs)?;
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, lhs, "!{var_name}"));
+                    return Ok(());
+                }
+
+                self.generate_code(prefix, rhs, Some(lhs))?;
+                self.release_all_temp_registers();
+            }
+            Instruction::Mov8RegMem(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov8;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let lhs = self.generate_code(InstructionPrefix::Mov8, inner.as_ref(), None)?;
+                    let rhs = self.get_register(rhs)?;
+                    self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.get_register(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
+            Instruction::Mov8MemReg(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov8;
+                let lhs = self.get_register(lhs)?;
+
+                let Statement::Address(inner) = rhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        rhs.offset(),
+                    );
+                };
+
+                if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    let rhs = self.generate_code(InstructionPrefix::Mov8, inner.as_ref(), None)?;
+                    self.code.push(formatted!(prefix, lhs, "&[{rhs}]"));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let rhs = self.get_address(rhs)?;
+                self.code.push(formatted!(prefix, lhs, "&[{rhs}]"));
+            }
+            Instruction::Mov8LitMem(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov8;
+
+                let Statement::Address(inner) = lhs else {
+                    return unexpected_statement(
+                        self.source,
+                        "unexpected statement, expected: [ADDRESS]",
+                        lhs.offset(),
+                    );
+                };
+
+                let lhs = if let Statement::BinaryOp { .. } = inner.as_ref() {
+                    self.generate_code(InstructionPrefix::Mov8, inner.as_ref(), None)?
+                        .to_string()
+                } else {
+                    self.get_address(lhs)?
+                };
+
+                if let Statement::Var(offset) = rhs {
+                    let var_name = offset.get_source(&self.source);
+                    self.code.push(formatted!(prefix, "&[{lhs}]", "!{var_name}"));
+                    self.release_all_temp_registers();
+                    return Ok(());
+                }
+
+                let hex = self.gen_hex_lit(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", hex));
+                self.release_all_temp_registers();
             }
             Instruction::Inc(reg) => {
                 let prefix = InstructionPrefix::Inc;

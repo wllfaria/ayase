@@ -18,6 +18,12 @@ pub enum Instruction {
     MovRegPtrReg(Register, Register),
     MovLitRegPtr(Register, u16),
 
+    Mov8LitReg(Register, u8),
+    Mov8RegReg(Register, Register),
+    Mov8RegMem(Register, Word),
+    Mov8MemReg(Word, Register),
+    Mov8LitMem(Word, u8),
+
     AddRegReg(Register, Register),
     AddLitReg(Register, u16),
     SubRegReg(Register, Register),

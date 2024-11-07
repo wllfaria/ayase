@@ -52,6 +52,65 @@ fn encode_literal_or_address(module: &mut CodegenModule, node: &Statement, inst:
     }
 }
 
+fn encode_literal_byte(module: &mut CodegenModule, node: &Statement, inst: &Instruction) -> miette::Result<u8> {
+    match node {
+        Statement::Var(name) => {
+            let name_str = &module.code[name.start..name.end];
+
+            if let Some(value) = module.symbols.get(name_str) {
+                if *value > 0xFF {
+                    let labels = vec![
+                        miette::LabeledSpan::at(*name, "this value"),
+                        miette::LabeledSpan::at(inst.offset(), "this statement"),
+                    ];
+                    return Err(bail_multi(
+                        &module.code,
+                        labels,
+                        "[INVALID_STATEMENT]: error while compiling statement",
+                        "hex number is not within u8 range",
+                    ));
+                }
+                return Ok(*value as u8);
+            }
+
+            if let Some(variables) = &module.variables {
+                if let Some(value) = variables.get(name_str).as_ref() {
+                    return Ok(value.to_value_small());
+                }
+            }
+
+            let labels = vec![
+                miette::LabeledSpan::at(*name, "this value"),
+                miette::LabeledSpan::at(inst.offset(), "this statement"),
+            ];
+            Err(bail_multi(
+                &module.code,
+                labels,
+                "[UNDEFINED_VARIABLE]: error while compiling statement",
+                "variable is not defined or imported",
+            ))
+        }
+        Statement::HexLiteral(value) => {
+            let value_str = &module.code[value.start..value.end];
+            let Ok(value) = u8::from_str_radix(value_str, 16) else {
+                let labels = vec![
+                    miette::LabeledSpan::at(*value, "this value"),
+                    miette::LabeledSpan::at(inst.offset(), "this statement"),
+                ];
+                return Err(bail_multi(
+                    &module.code,
+                    labels,
+                    "[INVALID_STATEMENT]: error while compiling statement",
+                    "hex number is not within the u8 range",
+                ));
+            };
+
+            Ok(value)
+        }
+        _ => unreachable!("{:?}", inst),
+    }
+}
+
 fn encode_register(source: &str, value: &Statement) -> miette::Result<u8> {
     let Statement::Register(name) = value else {
         unreachable!();
@@ -179,7 +238,7 @@ fn compile_instruction(
     *address += 1;
 
     match inst.kind() {
-        InstructionKind::LitReg | InstructionKind::MemReg => {
+        InstructionKind::LitReg | InstructionKind::MemReg | InstructionKind::MemReg8 => {
             let lhs = inst.lhs();
             let rhs = inst.rhs();
             let register = encode_register(&module.code, lhs)?;
@@ -191,6 +250,55 @@ fn compile_instruction(
             *address += 1;
             bytecode[*address as usize] = upper;
             *address += 1;
+        }
+        InstructionKind::LitReg8 => {
+            let lhs = inst.lhs();
+            let rhs = inst.rhs();
+            let register = encode_register(&module.code, lhs)?;
+            let value = encode_literal_byte(module, rhs, inst)?;
+            bytecode[*address as usize] = register;
+            *address += 1;
+            bytecode[*address as usize] = value;
+            *address += 1;
+        }
+        InstructionKind::LitMem8 => {
+            let lhs = inst.lhs();
+            let rhs = inst.rhs();
+            let value = encode_literal_or_address(module, lhs, inst)?;
+            let [lower, upper] = u16::to_le_bytes(value);
+            bytecode[*address as usize] = lower;
+            *address += 1;
+            bytecode[*address as usize] = upper;
+            *address += 1;
+            let value = encode_literal_byte(module, rhs, inst)?;
+            bytecode[*address as usize] = value;
+            *address += 1;
+        }
+        InstructionKind::RegMem8 => {
+            let lhs = inst.lhs();
+            let rhs = inst.rhs();
+            let Statement::Address(inner) = lhs else {
+                unreachable!();
+            };
+
+            if let Statement::Register(_) = inner.as_ref() {
+                let value = encode_register(&module.code, inner.as_ref())?;
+                let register = encode_register(&module.code, rhs)?;
+                bytecode[*address as usize] = value;
+                *address += 1;
+                bytecode[*address as usize] = register;
+                *address += 1;
+            } else {
+                let value = encode_literal_or_address(module, lhs, inst)?;
+                let [lower, upper] = u16::to_le_bytes(value);
+                let register = encode_register(&module.code, rhs)?;
+                bytecode[*address as usize] = lower;
+                *address += 1;
+                bytecode[*address as usize] = upper;
+                *address += 1;
+                bytecode[*address as usize] = register;
+                *address += 1;
+            }
         }
         InstructionKind::RegMem => {
             let lhs = inst.lhs();
@@ -220,7 +328,7 @@ fn compile_instruction(
                 *address += 1;
             }
         }
-        InstructionKind::RegReg | InstructionKind::RegPtrReg => {
+        InstructionKind::RegReg | InstructionKind::RegPtrReg | InstructionKind::RegReg8 => {
             let lhs = inst.lhs();
             let rhs = inst.rhs();
             let dest = encode_register(&module.code, lhs)?;

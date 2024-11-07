@@ -29,6 +29,7 @@ impl std::fmt::Display for Token {
             Kind::Ampersand => write!(f, "AMPERSAND"),
             Kind::Dot => write!(f, "DOT"),
             Kind::Mov => write!(f, "MOV"),
+            Kind::Mov8 => write!(f, "MOV8"),
             Kind::Add => write!(f, "ADD"),
             Kind::Sub => write!(f, "SUB"),
             Kind::Mul => write!(f, "MUL"),
@@ -86,6 +87,7 @@ pub enum Kind {
     Data16,
     Import,
     Mov,
+    Mov8,
     Add,
     Sub,
     Mul,
@@ -146,6 +148,7 @@ impl Kind {
             | Kind::Star
             | Kind::Eof => false,
             Kind::Mov
+            | Kind::Mov8
             | Kind::Add
             | Kind::Sub
             | Kind::Mul
@@ -178,6 +181,7 @@ impl Kind {
         match self {
             Kind::Plus | Kind::Minus | Kind::Star => true,
             Kind::Mov
+            | Kind::Mov8
             | Kind::Add
             | Kind::Sub
             | Kind::Eof
@@ -222,7 +226,7 @@ impl Kind {
             | Kind::Ret
             | Kind::Rti
             | Kind::Int
-            | Kind::Hlt => true,
+            | Kind::Hlt => false,
         }
     }
 }
@@ -256,6 +260,10 @@ impl Token {
             "mov" => Token {
                 offset: (start..end).into(),
                 kind: Kind::Mov,
+            },
+            "mov8" => Token {
+                offset: (start..end).into(),
+                kind: Kind::Mov8,
             },
             "add" => Token {
                 offset: (start..end).into(),

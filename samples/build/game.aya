@@ -1,3 +1,25 @@
+; AfterFrame @ ./after_frame.aya
+RTI
 ; main @ ./main.aya
+start:
+PSH R8
+MOV R8, $3032
+PSH R7
+MOV R7, R2
+PSH R6
+MOV R6, !var
+ADD R7, R6
+ADD R8, R7
+MOV R2, R8
+POP R6
+POP R7
+POP R8
+CALL &[!setup_interrupts]
+CALL &[!loop]
+HLT
+setup_interrupts:
+MOV &[$65C8], $3280
+RET
 loop:
 JMP &[!loop]
+RET
