@@ -198,6 +198,10 @@ impl Addressable for MemoryMapper {
             return Err(Error::UnmappedAddress(address));
         };
 
+        if region.end - region.start == 1.into() {
+            println!("{:?}", region);
+        }
+
         let address = match region.mapping_mode {
             MappingMode::Remap => address - region.start,
             MappingMode::Direct => address,

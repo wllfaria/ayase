@@ -1,7 +1,14 @@
-import "./after_frame.aya" AfterFrame &[$4000] { }
+import "./after_frame.aya" AfterFrame &[$1000] { }
 
 start:
-  mov &[$65C8 + $2], $4000
+  call &[!setup_interrupts]
+  call &[!loop]
+  hlt
+
+setup_interrupts:
+  mov &[$65C8], $3280
+  ret
 
 loop:
-  mov ip, &[!loop]
+  jmp &[!loop]
+  ret

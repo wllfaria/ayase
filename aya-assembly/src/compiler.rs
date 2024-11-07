@@ -230,6 +230,25 @@ fn compile_instruction(
             bytecode[*address as usize] = from;
             *address += 1;
         }
+        InstructionKind::LitRegPtr => {
+            let lhs = inst.lhs();
+            let rhs = inst.rhs();
+
+            let Statement::Address(inner) = lhs else {
+                unreachable!();
+            };
+
+            let reg = encode_register(&module.code, inner.as_ref())?;
+            let lit = encode_literal_or_address(module, rhs, inst)?;
+            let [lower, upper] = u16::to_le_bytes(lit);
+
+            bytecode[*address as usize] = reg;
+            *address += 1;
+            bytecode[*address as usize] = lower;
+            *address += 1;
+            bytecode[*address as usize] = upper;
+            *address += 1;
+        }
         InstructionKind::LitMem => {
             let lhs = inst.lhs();
             let rhs = inst.rhs();

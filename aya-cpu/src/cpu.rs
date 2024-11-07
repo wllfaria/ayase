@@ -34,7 +34,6 @@ impl<A: Addressable> Cpu<A> {
         }
     }
 
-    // TODO: remove this
     pub fn load_into_address(&mut self, bytecode: impl AsRef<[u8]>, address: impl TryInto<Word>) -> Result<()> {
         let mut address = match address.try_into() {
             Ok(addr) => addr,
@@ -103,6 +102,12 @@ impl<A: Addressable> Cpu<A> {
                 let reg_from = Register::try_from(reg_from)?;
                 let reg_to = Register::try_from(reg_to)?;
                 Ok(Instruction::MovRegPtrReg(reg_from, reg_to))
+            }
+            OpCode::MovLitRegPtr => {
+                let reg = self.next_instruction(InstructionSize::Small)?;
+                let lit = self.next_instruction(InstructionSize::Word)?;
+                let reg = Register::try_from(reg)?;
+                Ok(Instruction::MovLitRegPtr(reg, lit))
             }
             OpCode::PushLit => {
                 let val = self.next_instruction(InstructionSize::Word)?;
@@ -350,6 +355,10 @@ impl<A: Addressable> Cpu<A> {
                 let val = self.registers.fetch(from);
                 self.memory.write_word(address, val)?;
             }
+            Instruction::MovLitRegPtr(reg, lit) => {
+                let address = self.registers.fetch(reg);
+                self.memory.write_word(address, lit)?;
+            }
 
             Instruction::AddRegReg(r1, r2) => {
                 let r1_value = self.registers.fetch(r1);
@@ -451,80 +460,91 @@ impl<A: Addressable> Cpu<A> {
             Instruction::JeqLit(address, lit) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 if lit == ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JeqReg(address, reg) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 let reg_val = self.registers.fetch(reg);
                 if reg_val == ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JgtLit(address, lit) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 if lit > ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JgtReg(address, reg) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 let reg_val = self.registers.fetch(reg);
                 if reg_val > ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JneLit(address, lit) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 if lit != ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JneReg(address, reg) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 let reg_val = self.registers.fetch(reg);
                 if reg_val != ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JgeLit(address, lit) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 if lit >= ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JgeReg(address, reg) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 let reg_val = self.registers.fetch(reg);
                 if reg_val >= ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JleLit(address, lit) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 if lit <= ret_val {
-                    let address = u16::from(address) + u16::from(self.start_address);
-                    self.registers.set(Register::IP, address);
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into());
                 }
             }
             Instruction::JleReg(address, reg) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 let reg_val = self.registers.fetch(reg);
                 if reg_val <= ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JltLit(address, lit) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 if lit < ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::JltReg(address, reg) => {
                 let ret_val = self.registers.fetch(Register::Acc);
                 let reg_val = self.registers.fetch(reg);
                 if reg_val < ret_val {
-                    self.registers.set(Register::IP, address.into());
+                    let address = address + self.start_address;
+                    self.registers.set(Register::IP, address.into())
                 }
             }
             Instruction::Jmp(address) => {
@@ -572,6 +592,7 @@ impl<A: Addressable> Cpu<A> {
 
     fn call_address(&mut self, address: Word) -> Result<()> {
         self.save_stack()?;
+        let address = address + self.start_address;
         self.registers.set(Register::IP, address.into());
         Ok(())
     }

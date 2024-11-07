@@ -16,6 +16,7 @@ pub enum Instruction {
     MovMemReg(Word, Register),
     MovLitMem(Word, u16),
     MovRegPtrReg(Register, Register),
+    MovLitRegPtr(Register, u16),
 
     AddRegReg(Register, Register),
     AddLitReg(Register, u16),

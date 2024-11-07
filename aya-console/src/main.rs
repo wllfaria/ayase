@@ -16,7 +16,7 @@ use aya_cpu::memory::Addressable;
 use input::{Input, KeyStatus, RaylibInput};
 use renderer::{RaylibRenderer, Renderer};
 
-static CLOCK_CYCLE: usize = 4_200_000; // 4.2MHZ
+static CLOCK_CYCLE: usize = 20_000; // 4.2MHZ
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rom_file = std::env::args().nth(1).unwrap();
@@ -30,6 +30,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let fps = 60.0;
     let scale = 6;
     let mut renderer = RaylibRenderer::start(rom_file.name, fps, scale);
+
+    renderer.draw_frame(&mut cpu.memory)?;
 
     while !renderer.should_close() {
         let key_status = RaylibInput::new(renderer.handle()).poll();
@@ -119,8 +121,8 @@ fn setup_memory(rom: &rom_loader::Rom) -> impl Addressable {
     memory_mapper
         .map(
             InputMem::from(input_memory),
-            UI_MEM_LOC.0,
-            UI_MEM_LOC.1,
+            INPUT_MEM_LOC.0,
+            INPUT_MEM_LOC.1,
             MappingMode::Remap,
         )
         .unwrap();

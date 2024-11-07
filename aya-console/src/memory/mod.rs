@@ -35,7 +35,7 @@ pub const UI_MEM_LOC: (u16, u16) = (0x6424, 0x65C7);
 pub const INTERRUPT_MEM_LOC: (u16, u16) = (0x65C8, 0x65D7);
 
 ///   1B Input mapping
-pub const INPUT_MEM_LOC: (u16, u16) = (0x65D7, 0x65D8);
+pub const INPUT_MEM_LOC: (u16, u16) = (0x65D8, 0x65D8);
 
 /// 8KiB Stack memory
 pub const STACK_MEM_LOC: (u16, u16) = (0xE000, 0xFFFF);

@@ -519,6 +519,12 @@ impl<'codegen> CodeGenerator<'codegen> {
                 let rhs = self.get_address(rhs)?;
                 self.code.push(formatted!(prefix, "&[{lhs}]", "&[{rhs}]"));
             }
+            Instruction::MovLitRegPtr(lhs, rhs) => {
+                let prefix = InstructionPrefix::Mov;
+                let lhs = self.get_address(lhs)?;
+                let rhs = self.gen_hex_lit(rhs)?;
+                self.code.push(formatted!(prefix, "&[{lhs}]", rhs));
+            }
             Instruction::Inc(reg) => {
                 let prefix = InstructionPrefix::Inc;
                 let reg = self.get_register(reg)?;

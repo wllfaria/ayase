@@ -48,6 +48,11 @@ pub fn parse_mov<S: AsRef<str>>(source: S, lexer: &mut Lexer) -> Result<Statemen
         (Kind::Ampersand, Kind::Ident) => Ok(Instruction::MovRegMem(lhs, rhs).into()),
         // MovMemReg
         (Kind::Ident, Kind::Ampersand) => Ok(Instruction::MovMemReg(lhs, rhs).into()),
+        // MovLitRegPtr
+        (Kind::Ampersand, Kind::HexNumber) if is_reg_address(&lhs) => Ok(Instruction::MovLitRegPtr(lhs, rhs).into()),
+        (Kind::Ampersand, Kind::Ampersand) if is_reg_address(&rhs) && is_reg_address(&lhs) => {
+            Ok(Instruction::MovRegPtrReg(lhs, rhs).into())
+        }
         // MovLitMem
         (Kind::Ampersand, Kind::LBracket) => Ok(Instruction::MovLitMem(lhs, rhs).into()),
         (Kind::Ampersand, Kind::Bang) => Ok(Instruction::MovLitMem(lhs, rhs).into()),

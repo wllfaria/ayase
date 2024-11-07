@@ -183,7 +183,8 @@ impl Registers {
         let stack_address = stack_address.into();
         registers.inner[Register::FP as usize] = u16::from(stack_address) - 2;
         registers.inner[Register::SP as usize] = u16::from(stack_address) - 2;
-        registers.inner[Register::IP as usize] = start_address.into().into();
+        let word = start_address.into();
+        registers.inner[Register::IP as usize] = word.into();
         registers.inner[Register::IM as usize] = 0xffff;
         registers
     }

@@ -185,6 +185,7 @@ pub enum InstructionKind {
     MemReg,
     LitMem,
     RegPtrReg,
+    LitRegPtr,
     NoArgs,
     SingleReg,
     SingleLit,
@@ -199,6 +200,7 @@ impl InstructionKind {
             InstructionKind::MemReg => 4,
             InstructionKind::LitMem => 5,
             InstructionKind::RegPtrReg => 3,
+            InstructionKind::LitRegPtr => 4,
             InstructionKind::NoArgs => 1,
             InstructionKind::SingleReg => 2,
             InstructionKind::SingleLit => 3,
@@ -214,6 +216,7 @@ pub enum Instruction {
     MovMemReg(Statement, Statement),
     MovLitMem(Statement, Statement),
     MovRegPtrReg(Statement, Statement),
+    MovLitRegPtr(Statement, Statement),
     AddRegReg(Statement, Statement),
     AddLitReg(Statement, Statement),
     SubRegReg(Statement, Statement),
@@ -265,6 +268,7 @@ impl Instruction {
             | Instruction::MovMemReg(lhs, _)
             | Instruction::MovLitMem(lhs, _)
             | Instruction::MovRegPtrReg(lhs, _)
+            | Instruction::MovLitRegPtr(lhs, _)
             | Instruction::AddRegReg(lhs, _)
             | Instruction::AddLitReg(lhs, _)
             | Instruction::SubRegReg(lhs, _)
@@ -315,6 +319,7 @@ impl Instruction {
             | Instruction::MovMemReg(_, rhs)
             | Instruction::MovLitMem(_, rhs)
             | Instruction::MovRegPtrReg(_, rhs)
+            | Instruction::MovLitRegPtr(_, rhs)
             | Instruction::AddRegReg(_, rhs)
             | Instruction::AddLitReg(_, rhs)
             | Instruction::SubRegReg(_, rhs)
@@ -367,6 +372,7 @@ impl Instruction {
             Instruction::MovMemReg(_, _) => OpCode::MovMemReg,
             Instruction::MovLitMem(_, _) => OpCode::MovLitMem,
             Instruction::MovRegPtrReg(_, _) => OpCode::MovRegPtrReg,
+            Instruction::MovLitRegPtr(_, _) => OpCode::MovLitRegPtr,
 
             Instruction::AddRegReg(_, _) => OpCode::AddRegReg,
             Instruction::AddLitReg(_, _) => OpCode::AddLitReg,
@@ -460,6 +466,7 @@ impl Instruction {
 
             Instruction::MovMemReg(_, _) => InstructionKind::MemReg,
             Instruction::MovRegPtrReg(_, _) => InstructionKind::RegPtrReg,
+            Instruction::MovLitRegPtr(_, _) => InstructionKind::LitRegPtr,
             Instruction::PshLit(_) | Instruction::Call(_) | Instruction::Jmp(_) | Instruction::Int(_) => {
                 InstructionKind::SingleLit
             }
@@ -479,6 +486,7 @@ impl Instruction {
             Instruction::MovMemReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::MovLitMem(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::MovRegPtrReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
+            Instruction::MovLitRegPtr(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::AddRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::AddLitReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
             Instruction::SubRegReg(lhs, rhs) => (lhs.offset().start - NORMAL..rhs.offset().end).into(),
