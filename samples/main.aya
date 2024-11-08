@@ -3,6 +3,7 @@ import "./after_frame.aya" AfterFrame &[$1000] { }
 const PLAYER = $2000
 const PLAYER_X = $2001
 const PLAYER_Y = $2002
+const MOVE_SPEED = $2
 
 start:
 setup_sprites:
@@ -22,7 +23,7 @@ check_left_press:
   rsh acc, $7
   jne &[!check_down_press], $1
   mov8 r7, &[!PLAYER_X]
-  sub r7, $1
+  sub r7, !MOVE_SPEED
   mov8 &[!PLAYER_X], r7
 
 check_down_press:
@@ -31,7 +32,7 @@ check_down_press:
   rsh acc, $6
   jne &[!check_up_press], $1
   mov8 r7, &[!PLAYER_Y]
-  add r7, $1
+  add r7, !MOVE_SPEED
   mov8 &[!PLAYER_Y], r7
 
 check_up_press:
@@ -40,17 +41,20 @@ check_up_press:
   rsh acc, $5
   jne &[!check_right_press], $1
   mov8 r7, &[!PLAYER_Y]
-  sub r7, $1
+  sub r7, !MOVE_SPEED
   mov8 &[!PLAYER_Y], r7
 
 check_right_press:
   mov acc, r8
   and acc, $10
   rsh acc, $4
-  jne &[!game_loop], $1
+  jne &[!clear_input], $1
   mov8 r7, &[!PLAYER_X]
-  add r7, $1
+  add r7, !MOVE_SPEED
   mov8 &[!PLAYER_X], r7
+
+clear_input:
+  mov8 &[$65D8], $0
 
 game_loop:
   jmp &[!check_inputs]

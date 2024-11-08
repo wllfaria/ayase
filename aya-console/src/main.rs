@@ -16,7 +16,8 @@ use aya_cpu::memory::Addressable;
 use input::{Input, KeyStatus, RaylibInput};
 use renderer::{RaylibRenderer, Renderer};
 
-static CLOCK_CYCLE: usize = 200; // 4.2MHZ
+const CLOCK_CYCLE: usize = 2000;
+const FPS: f32 = 60.0;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rom_file = std::env::args().nth(1).unwrap();
@@ -27,9 +28,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cpu = Cpu::new(memory, CODE_MEM_LOC.0, STACK_MEM_LOC.1, INTERRUPT_MEM_LOC.0);
     cpu.load_into_address(rom_file.code, CODE_MEM_LOC.0).unwrap();
 
-    let fps = 60.0;
-    let scale = 6;
-    let mut renderer = RaylibRenderer::start(rom_file.name, fps, scale);
+    let scale = 4;
+    let mut renderer = RaylibRenderer::start(rom_file.name, FPS, scale);
 
     renderer.draw_frame(&mut cpu.memory)?;
 
@@ -41,11 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             renderer.draw_frame(&mut cpu.memory)?;
         }
 
-        //for _ in 0..CLOCK_CYCLE {
-        if let ControlFlow::Halt(_) = cpu.step()? {
-            return Ok(());
-        };
-        //}
+        for _ in 0..CLOCK_CYCLE {
+            if let ControlFlow::Halt(_) = cpu.step()? {
+                return Ok(());
+            };
+        }
 
         cpu.memory.write(INPUT_MEM_LOC.0, KeyStatus::reset())?;
         cpu.handle_interrupt(Interrupt::AfterFrame)?;

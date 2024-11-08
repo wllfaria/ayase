@@ -31,7 +31,7 @@ impl RaylibRenderer {
 }
 
 impl Renderer for RaylibRenderer {
-    fn start(name: &str, fps: f64, scale: u16) -> Self {
+    fn start(name: &str, fps: f32, scale: u16) -> Self {
         let (handle, thread) = raylib::init()
             .size(
                 TILES_WIDTH as i32 * SPRITE_WIDTH as i32 * scale as i32,
@@ -42,7 +42,7 @@ impl Renderer for RaylibRenderer {
             .build();
 
         let frame_start = Instant::now();
-        let frame_duration = Duration::from_secs_f64(1.0 / fps);
+        let frame_duration = Duration::from_secs_f64(1.0 / fps as f64);
 
         Self {
             scale,
@@ -65,21 +65,30 @@ impl Renderer for RaylibRenderer {
         let mut draw_handle = self.handle.begin_drawing(&self.thread);
         draw_handle.clear_background(Color::BLACK);
 
-        //for y in 0..TILES_HEIGHT {
-        //    for x in 0..TILES_WIDTH {
-        //        let tile_x = x * SPRITE_WIDTH * self.scale;
-        //        let tile_y = y * SPRITE_WIDTH * self.scale;
-        //        if (x + y) % 2 == 0 {
-        //            render_tile(tile_x, tile_y, 7 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
-        //        } else {
-        //            render_tile(tile_x, tile_y, 6 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
-        //        }
-        //    }
-        //}
+        for y in 0..TILES_HEIGHT {
+            for x in 0..TILES_WIDTH {
+                let tile_x = x * SPRITE_WIDTH * self.scale;
+                let tile_y = y * SPRITE_WIDTH * self.scale;
+                if (x + y) % 2 == 0 {
+                    render_tile(tile_x, tile_y, 7 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
+                } else {
+                    render_tile(tile_x, tile_y, 6 * BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
+                }
+            }
+        }
 
         render_background(memory, &mut draw_handle, self.scale)?;
         render_sprites(memory, &mut draw_handle, self.scale)?;
         render_interface(memory, &mut draw_handle, self.scale)?;
+
+        for y in 0..TILES_HEIGHT {
+            for x in 10..11 {
+                let tile_x = x * SPRITE_WIDTH * self.scale;
+                let tile_y = y * SPRITE_WIDTH * self.scale;
+                render_tile(tile_x, tile_y, BYTES_PER_TILE, memory, &mut draw_handle, self.scale)?;
+            }
+        }
+
         self.frame_start = Instant::now();
         Ok(())
     }

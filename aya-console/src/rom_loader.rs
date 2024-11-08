@@ -28,7 +28,5 @@ pub fn load_from_file(rom: &[u8]) -> Rom {
     let code = &rom[code_offset..code_offset + code_size];
     let sprites = &rom[sprites_offset..sprites_offset + sprites_size];
 
-    println!("{code:02X?}");
-
     Rom { name, code, sprites }
 }

@@ -62,7 +62,6 @@ impl<A: Addressable> Cpu<A> {
     }
 
     fn fetch(&mut self) -> Result<Instruction> {
-        self.registers.inspect_register(Register::IP);
         let op = self.next_instruction(InstructionSize::Small)?;
         let op = OpCode::try_from(op)?;
         match op {
