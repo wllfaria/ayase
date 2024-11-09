@@ -3,12 +3,12 @@ members = [
     "aya-cpu",
     "aya-console",
     "aya-bitmap",
-    "aya-packer",
+    "aya-cli",
     "aya-assembly",
 ]
 default-members = [
     "aya-console",
-    "aya-packer"
+    "aya-cli"
 ]
 resolver = "2"
 

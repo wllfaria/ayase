@@ -33,11 +33,20 @@ check_left_press:
   mov acc, r8
   and acc, $80
   rsh acc, $7
-  jne &[!check_up_press], $1
+  jne &[!check_down_press], $1
   mov8 r7, &[!PLAYER_X]
   sub r7, !MOVE_SPEED
   mov8 &[!PLAYER_X], r7
   call &[!look_left]
+
+check_down_press:
+  mov acc, r8
+  and acc, $40
+  rsh acc, $6
+  jne &[!check_up_press], $1
+  mov8 r7, &[!PLAYER_Y]
+  add r7, !MOVE_SPEED
+  mov8 &[!PLAYER_Y], r7
 
 check_up_press:
   mov acc, r8

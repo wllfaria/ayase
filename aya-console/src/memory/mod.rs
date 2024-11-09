@@ -28,14 +28,17 @@ pub const CODE_MEM_LOC: (u16, u16) = (0x2280, 0x627F);
 /// 420B Background memory
 pub const BG_MEM_LOC: (u16, u16) = (0x6280, 0x6423);
 
-/// 420B Background memory
-pub const UI_MEM_LOC: (u16, u16) = (0x6424, 0x65C7);
+/// 420B Foreground memory
+pub const FG_MEM_LOC: (u16, u16) = (0x6424, 0x65C7);
+
+/// 420B Interface memory
+pub const UI_MEM_LOC: (u16, u16) = (0x65C8, 0x676B);
 
 ///  16B Interrupt table
-pub const INTERRUPT_MEM_LOC: (u16, u16) = (0x65C8, 0x65D6);
+pub const INTERRUPT_MEM_LOC: (u16, u16) = (0x676C, 0x677B);
 
 ///   1B Input mapping
-pub const INPUT_MEM_LOC: (u16, u16) = (0x65D8, 0x65D8);
+pub const INPUT_MEM_LOC: (u16, u16) = (0x677C, 0x677C);
 
 /// 8KiB Stack memory
 pub const STACK_MEM_LOC: (u16, u16) = (0xE000, 0xFFFF);

@@ -40,9 +40,10 @@ Acc - Will store the return value
 | 0x2000 | 0x227F |  640B Memory dedicated to sprite drawing                   |
 | 0x2280 | 0x627F | 16KiB Memory dedicated to program source code              |
 | 0x6280 | 0x6423 |  420B Memory for background tilemap drawing                |
-| 0x6424 | 0x65C7 |  420B Memory for interface tilemap drawing                 |
-| 0x65C8 | 0x65D7 |   16B Memory as interrupt table                            |
-| 0x65D7 | 0x65D8 |    1B Memory as input mapping                              |
+| 0x6424 | 0x65C7 |  420B Memory for foreground tilemap drawing                |
+| 0x65C8 | 0x676B |  420B Memory for interface tilemap drawing                 |
+| 0x676C | 0x677B |   16B Memory as interrupt table                            |
+| 0x677C | 0x677D |    1B Memory as input mapping                              |
 | TODO: Rest of the memory layout                                              |
 | 0xE000 | 0xFFFF | 8KiB stack memory                                          |
 
@@ -100,3 +101,19 @@ bit has a special meaning that goes as follows:
 | Byte 0 | Byte 1 | Byte 2 - Byte 7 |
 |--------|--------|-----------------|
 | x flip | y flip | TODO            |
+
+### Input Mapping
+Aya supports 8 buttons, those being named, left, down, up, right, main, 
+secondary, pause, select. They are stored internally as a single byte, where
+each bit represents one of the buttons, in the same order described above.
+
+| Bit idx         | Button    | Keyboard                                       |
+|-----------------|-----------|------------------------------------------------|
+| Idx 7 (8th bit) | Left      | A key, Left key                                |
+| Idx 6 (7th bit) | Down      | S key, Down key                                |
+| Idx 5 (6th bit) | Up        | W key, Up key                                  |
+| Idx 4 (5th bit) | Right     | D key, Right key                               |
+| Idx 3 (4th bit) | A         |                                                |
+| Idx 2 (3th bit) | B         |                                                |
+| Idx 1 (2th bit) | C         |                                                |
+| Idx 0 (1th bit) | D         |                                                |

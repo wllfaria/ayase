@@ -30,10 +30,14 @@ pub struct Args {
 
     #[arg(long, required = false)]
     config: Option<String>,
+
+    #[arg(long, short, action = clap::ArgAction::SetTrue)]
+    run: bool,
 }
 
 fn main() -> std::result::Result<ExitCode, Box<dyn std::error::Error>> {
     let args = Args::parse();
+    let run = args.run;
 
     let config = match args.code.is_some() {
         true => Config::from_args(args),
@@ -79,7 +83,11 @@ fn main() -> std::result::Result<ExitCode, Box<dyn std::error::Error>> {
     let header = rom::make_header(&config, code.len() as u16, sprites.len() as u16);
     let rom = rom::compile(&header, &code, &sprites);
 
-    std::fs::write(config.output, rom).expect("failed to write rom into specified output");
+    std::fs::write(&config.output, rom).expect("failed to write rom into specified output");
+
+    if run {
+        aya_console::run(config.output)?;
+    }
 
     Ok(ExitCode::SUCCESS)
 }

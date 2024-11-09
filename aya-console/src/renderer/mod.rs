@@ -1,5 +1,5 @@
 mod error;
-mod raylib;
+pub mod raylib;
 
 use aya_cpu::memory::Addressable;
 use error::Result;

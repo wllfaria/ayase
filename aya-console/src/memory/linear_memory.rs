@@ -25,7 +25,8 @@ impl<const SIZE: usize> Addressable for LinearMemory<SIZE> {
     where
         W: Into<Word> + Copy,
     {
-        self.memory[usize::from(address.into())] = byte.into();
+        let address = address.into();
+        self.memory[usize::from(address)] = byte.into();
         Ok(())
     }
 }

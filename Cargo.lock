@@ -107,6 +107,18 @@ name = "aya-bitmap"
 version = "0.1.0"
 
 [[package]]
+name = "aya-cli"
+version = "0.1.0"
+dependencies = [
+ "aya-assembly",
+ "aya-bitmap",
+ "aya-console",
+ "clap",
+ "insta",
+ "miette",
+]
+
+[[package]]
 name = "aya-console"
 version = "0.1.0"
 dependencies = [
@@ -118,18 +130,6 @@ dependencies = [
 [[package]]
 name = "aya-cpu"
 version = "0.1.0"
-
-[[package]]
-name = "aya-packer"
-version = "0.1.0"
-dependencies = [
- "aya-assembly",
- "aya-bitmap",
- "aya-console",
- "clap",
- "insta",
- "miette",
-]
 
 [[package]]
 name = "backtrace"
