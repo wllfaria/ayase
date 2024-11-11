@@ -745,3 +745,429 @@ impl<A: Addressable> Cpu<A> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Memory {
+        memory: [u8; u16::MAX as usize],
+    }
+
+    impl Memory {
+        pub fn new() -> Self {
+            Self {
+                memory: [0; u16::MAX as usize],
+            }
+        }
+    }
+
+    impl Addressable for Memory {
+        fn read<W>(&self, address: W) -> crate::memory::Result<u8>
+        where
+            W: Into<Word> + Copy,
+        {
+            Ok(self.memory[usize::from(address.into())])
+        }
+
+        fn write<W>(&mut self, address: W, byte: impl Into<u8>) -> crate::memory::Result<()>
+        where
+            W: Into<Word> + Copy,
+        {
+            self.memory[usize::from(address.into())] = byte.into();
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_mov_lit_reg() {
+        let mut memory = Memory::new();
+        // mov r1, $ff
+        memory.write(0x0000, OpCode::MovLitReg).unwrap();
+        memory.write(0x0001, Register::R1).unwrap();
+        memory.write_word(0x0002, 0x00FF).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.step().unwrap();
+        assert_eq!(cpu.registers.fetch(Register::R1), 0xFF);
+    }
+
+    #[test]
+    fn test_mov_reg_reg() {
+        let mut memory = Memory::new();
+        // mov r1, $ff
+        memory.write(0x0000, OpCode::MovLitReg).unwrap();
+        memory.write(0x0001, Register::R1).unwrap();
+        memory.write_word(0x0002, 0x00FF).unwrap();
+
+        // mov r2, r1
+        memory.write(0x0004, OpCode::MovRegReg).unwrap();
+        memory.write(0x0005, Register::R2).unwrap();
+        memory.write(0x0006, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.step().unwrap();
+        cpu.step().unwrap();
+        assert_eq!(cpu.registers.fetch(Register::R2), 0xFF);
+    }
+
+    #[test]
+    fn test_mov_reg_mem() {
+        let mut memory = Memory::new();
+        // mov r1, $ff
+        memory.write(0x0000, OpCode::MovLitReg).unwrap();
+        memory.write(0x0001, Register::R1).unwrap();
+        memory.write_word(0x0002, 0x00FF).unwrap();
+
+        // mov &[$0100], r1
+        memory.write(0x0004, OpCode::MovRegMem).unwrap();
+        memory.write_word(0x0005, 0x0100).unwrap();
+        memory.write(0x0007, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.step().unwrap();
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.memory.read(0x0100).unwrap(), 0xFF);
+    }
+
+    #[test]
+    fn test_mov_mem_reg() {
+        let mut memory = Memory::new();
+        memory.write_word(0x0100, 0xabcd).unwrap();
+
+        // mov r1, &[$0100]
+        memory.write(0x0000, OpCode::MovMemReg).unwrap();
+        memory.write(0x0001, Register::R1).unwrap();
+        memory.write_word(0x0002, 0x0100).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::R1), 0xabcd);
+    }
+
+    #[test]
+    fn test_jeq_reg() {
+        let mut memory = Memory::new();
+
+        // jeq &[$0100], r1
+        memory.write(0x0000, OpCode::JeqReg).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write(0x0003, Register::R1).unwrap();
+
+        // jeq &[$0100], r1
+        memory.write(0x0004, OpCode::JeqReg).unwrap();
+        memory.write_word(0x0005, 0x0100).unwrap();
+        memory.write(0x0007, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0004);
+
+        cpu.registers.set(Register::R1, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jeq_lit() {
+        let mut memory = Memory::new();
+
+        // jeq &[$0100], $1234
+        memory.write(0x0000, OpCode::JeqLit).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write_word(0x0003, 0x1234).unwrap();
+
+        // jeq &[$0100], $abcd
+        memory.write(0x0005, OpCode::JeqLit).unwrap();
+        memory.write_word(0x0006, 0x0100).unwrap();
+        memory.write_word(0x0008, 0xabcd).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0005);
+
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jgt_reg() {
+        let mut memory = Memory::new();
+
+        // jgt &[$0100], r1
+        memory.write(0x0000, OpCode::JgtReg).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write(0x0003, Register::R1).unwrap();
+
+        // jgt &[$0100], r1
+        memory.write(0x0004, OpCode::JgtReg).unwrap();
+        memory.write_word(0x0005, 0x0100).unwrap();
+        memory.write(0x0007, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.registers.set(Register::R1, 0xabcc);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0004);
+
+        cpu.registers.set(Register::R1, 0xffff);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jgt_lit() {
+        let mut memory = Memory::new();
+
+        // jgt &[$0100], $1234
+        memory.write(0x0000, OpCode::JgtLit).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write_word(0x0003, 0x1234).unwrap();
+
+        // jgt &[$0100], $abcd
+        memory.write(0x0005, OpCode::JgtLit).unwrap();
+        memory.write_word(0x0006, 0x0100).unwrap();
+        memory.write_word(0x0008, 0xffff).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0005);
+
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jne_reg() {
+        let mut memory = Memory::new();
+
+        // jne &[$0100], r1
+        memory.write(0x0000, OpCode::JneReg).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write(0x0003, Register::R1).unwrap();
+
+        // jne &[$0100], r1
+        memory.write(0x0004, OpCode::JneReg).unwrap();
+        memory.write_word(0x0005, 0x0100).unwrap();
+        memory.write(0x0007, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.registers.set(Register::R1, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0004);
+
+        cpu.registers.set(Register::R1, 0xffff);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jne_lit() {
+        let mut memory = Memory::new();
+
+        // jne &[$0100], $abcd
+        memory.write(0x0000, OpCode::JneLit).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write_word(0x0003, 0xabcd).unwrap();
+
+        // jne &[$0100], $abce
+        memory.write(0x0005, OpCode::JneLit).unwrap();
+        memory.write_word(0x0006, 0x0100).unwrap();
+        memory.write_word(0x0008, 0xffff).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0005);
+
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jge_reg() {
+        let mut memory = Memory::new();
+
+        // jge &[$0100], r1
+        memory.write(0x0000, OpCode::JgeReg).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write(0x0003, Register::R1).unwrap();
+
+        // jge &[$0100], r1
+        memory.write(0x0004, OpCode::JgeReg).unwrap();
+        memory.write_word(0x0005, 0x0100).unwrap();
+        memory.write(0x0007, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0004);
+
+        cpu.registers.set(Register::R1, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jge_lit() {
+        let mut memory = Memory::new();
+
+        // jge &[$0100], $0000
+        memory.write(0x0000, OpCode::JgeLit).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write_word(0x0003, 0x0000).unwrap();
+
+        // jge &[$0100], $abcd
+        memory.write(0x0005, OpCode::JgeLit).unwrap();
+        memory.write_word(0x0006, 0x0100).unwrap();
+        memory.write_word(0x0008, 0xffff).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0005);
+
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jle_reg() {
+        let mut memory = Memory::new();
+
+        // jle &[$0100], r1
+        memory.write(0x0000, OpCode::JleReg).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write(0x0003, Register::R1).unwrap();
+
+        // jle &[$0100], r1
+        memory.write(0x0004, OpCode::JleReg).unwrap();
+        memory.write_word(0x0005, 0x0100).unwrap();
+        memory.write(0x0007, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.registers.set(Register::R1, 0xffff);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0004);
+
+        cpu.registers.set(Register::R1, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jle_lit() {
+        let mut memory = Memory::new();
+
+        // jle &[$0100], $ffff
+        memory.write(0x0000, OpCode::JleLit).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write_word(0x0003, 0xffff).unwrap();
+
+        // jle &[$0100], $abcd
+        memory.write(0x0005, OpCode::JleLit).unwrap();
+        memory.write_word(0x0006, 0x0100).unwrap();
+        memory.write_word(0x0008, 0xabcd).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0005);
+
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jlt_reg() {
+        let mut memory = Memory::new();
+
+        // jlt &[$0100], r1
+        memory.write(0x0000, OpCode::JltReg).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write(0x0003, Register::R1).unwrap();
+
+        // jlt &[$0100], r1
+        memory.write(0x0004, OpCode::JltReg).unwrap();
+        memory.write_word(0x0005, 0x0100).unwrap();
+        memory.write(0x0007, Register::R1).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.registers.set(Register::R1, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0004);
+
+        cpu.registers.set(Register::R1, 0xabcc);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jlt_lit() {
+        let mut memory = Memory::new();
+
+        // jlt &[$0100], $abcd
+        memory.write(0x0000, OpCode::JltLit).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+        memory.write_word(0x0003, 0xabcd).unwrap();
+
+        // jlt &[$0100], $abcc
+        memory.write(0x0005, OpCode::JltLit).unwrap();
+        memory.write_word(0x0006, 0x0100).unwrap();
+        memory.write_word(0x0008, 0xabcc).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.registers.set(Register::Acc, 0xabcd);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0005);
+
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+
+    #[test]
+    fn test_jmp_lit() {
+        let mut memory = Memory::new();
+
+        // jmp &[$0100]
+        memory.write(0x0000, OpCode::Jmp).unwrap();
+        memory.write_word(0x0001, 0x0100).unwrap();
+
+        let mut cpu = Cpu::new(memory, 0, 0x8000, 0x1000);
+        cpu.step().unwrap();
+
+        assert_eq!(cpu.registers.fetch(Register::IP), 0x0100);
+    }
+}
